@@ -228,13 +228,12 @@ public class ShowAreaBig extends JComponent {
 													VibeComposerGUI.switchTabPaneToScoreAfterApply = true;
 												}
 												JComponent toFlash = VibeComposerGUI.getAffectedPanels(phrase.part).get(phrase.partOrder - 1).getInstrumentBox();
-												Timer tmr = new Timer(250, e -> SwingUtils.flashComponentCustom(toFlash,
+												Timer tmr = new Timer(200, e -> SwingUtils.flashComponentCustom(toFlash,
 														(f, state) -> {
 															f.setOpaque(state);
 															f.setBackground(state ? Color.RED : null);
 															f.repaint();
-															LG.i(f + "; " + state);
-														}, 100, 400));
+														}, 150, 300));
 												tmr.setRepeats(false);
 												tmr.start();
 											});
