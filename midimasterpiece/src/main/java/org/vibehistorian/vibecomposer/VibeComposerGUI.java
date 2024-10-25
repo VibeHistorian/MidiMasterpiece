@@ -889,6 +889,7 @@ public class VibeComposerGUI extends JFrame
 		LG.i("Add everything: " + (System.currentTimeMillis() - sysTime) + " ms!");
 		setFullMode(isFullMode);
 		LG.i("Full: " + (System.currentTimeMillis() - sysTime) + " ms!");
+		instrumentTabUndoManager.setRecordingEvents(true);
 		instrumentTabPane.setSelectedIndex(7);
 		//instrumentTabPane.setBorder(BorderFactory.createBevelBorder(BevelBorder.RAISED));
 		recalculateTabPaneCounts();
@@ -929,7 +930,6 @@ public class VibeComposerGUI extends JFrame
 		repaint();
 		//initScrollPaneListeners();
 		actionUndoManager.setRecordingEvents(true);
-		instrumentTabUndoManager.setRecordingEvents(true);
 		LG.i("VibeComposer started in: " + (System.currentTimeMillis() - sysTime)
 				+ " ms! Creating Panels in background...");
 
