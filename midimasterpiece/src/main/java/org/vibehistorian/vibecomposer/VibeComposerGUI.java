@@ -272,7 +272,16 @@ public class VibeComposerGUI extends JFrame
 	ScrollComboBox<String> newSectionBox;
 
 	// instrument scrollers
-	public static JTabbedPane instrumentTabPane = new JTabbedPane(JTabbedPane.TOP);
+	public static JTabbedPane instrumentTabPane = new JTabbedPane(JTabbedPane.TOP) {
+		@Override
+		public void setSelectedIndex(int index) {
+			if (index >= getComponents().length) {
+				index = getComponents().length - 1;
+			}
+			super.setSelectedIndex(index);
+			instrumentTabUndoManager.saveToHistory(instrumentTabPane);
+		}
+	};
 	public static JScrollPane scoreScrollPane;
 	public static ShowPanelBig scorePanel;
 	public static final int DEFAULT_WIDTH = 1600;
@@ -618,6 +627,8 @@ public class VibeComposerGUI extends JFrame
 	public static Map<Integer, SoloMuter> apSm = null;
 	public static Map<Integer, SoloMuter> dpSm = null;
 
+	public static UndoManager actionUndoManager = new UndoManager();
+	public static UndoManager instrumentTabUndoManager = new UndoManager();
 	public static DebugConsole dconsole = null;
 	public static VibeComposerGUI vibeComposerGUI = null;
 
@@ -910,13 +921,15 @@ public class VibeComposerGUI extends JFrame
 		}
 
 		initKeyboardListener();
+		initMouseBackForwardListener();
 		// block compose/regenerate until UI fully loaded
 		heavyBackgroundTasksInProgress = true;
 		setVisible(true);
 
 		repaint();
 		//initScrollPaneListeners();
-		UndoManager.recordingEvents = true;
+		actionUndoManager.setRecordingEvents(true);
+		instrumentTabUndoManager.setRecordingEvents(true);
 		LG.i("VibeComposer started in: " + (System.currentTimeMillis() - sysTime)
 				+ " ms! Creating Panels in background...");
 
@@ -947,25 +960,48 @@ public class VibeComposerGUI extends JFrame
 	}
 
 	private void initKeyboardListener() {
-
-
-		// switch pane using C/A/D (chords/arps/drums)
-
 		KeyboardFocusManager.getCurrentKeyboardFocusManager()
 				.addKeyEventDispatcher(new KeyEventDispatcher() {
 					public boolean dispatchKeyEvent(KeyEvent e) {
-						if (e.isControlDown() && vibeComposerGUI.isFocused()
-								&& vibeComposerGUI.isActive()) {
-							if (e.getID() == KeyEvent.KEY_RELEASED) {
+						if (!vibeComposerGUI.isFocused()
+								|| !vibeComposerGUI.isActive()
+								|| e.getID() != KeyEvent.KEY_RELEASED) {
+							return false;
+						}
+						if (e.isControlDown()) {
 								if (e.getKeyCode() == KeyEvent.VK_Z)
-									UndoManager.undo();
+									actionUndoManager.undo();
 								else if (e.getKeyCode() == KeyEvent.VK_Y)
-									UndoManager.redo();
+									actionUndoManager.redo();
+						} else {
+							if (e.getKeyCode() >= KeyEvent.VK_1 && e.getKeyCode() <= KeyEvent.VK_8) {
+								instrumentTabPane.setSelectedIndex(e.getKeyCode() - KeyEvent.VK_1);
 							}
 						}
 						return false;
 					}
 				});
+	}
+
+	private void initMouseBackForwardListener() {
+		Toolkit.getDefaultToolkit().addAWTEventListener(new AWTEventListener() {
+			public void eventDispatched(AWTEvent event) {
+				if (event instanceof MouseEvent){
+					MouseEvent evt = (MouseEvent)event;
+					if (evt.getID() == MouseEvent.MOUSE_RELEASED) {
+						if (!vibeComposerGUI.isFocused()
+								|| !vibeComposerGUI.isActive()) {
+							return;
+						}
+						if (evt.getButton() == 4) {
+							instrumentTabUndoManager.undo();
+						} else if (evt.getButton() == 5) {
+							instrumentTabUndoManager.redo();
+						}
+					}
+				}
+			}
+		}, AWTEvent.MOUSE_EVENT_MASK);
 	}
 
 	private void initTitles(int startY, int anchorSide) {
@@ -8113,6 +8149,10 @@ public class VibeComposerGUI extends JFrame
 			if (csc.getItemCount() > 0) {
 				csc.setSelectedIndex(Math.min(num, csc.getItemCount()));
 			}
+		} else if (c == instrumentTabPane) {
+			instrumentTabUndoManager.setRecordingEvents(false);
+			instrumentTabPane.setSelectedIndex(num < instrumentTabPane.getComponents().length ? num : num - 1);
+			instrumentTabUndoManager.setRecordingEvents(true);
 		} else {
 			throw new IllegalArgumentException("UNSUPPORTED COMPONENT!" + c.getClass());
 		}
@@ -8136,6 +8176,8 @@ public class VibeComposerGUI extends JFrame
 			return ((CheckButton) c).isSelected() ? 1 : 0;
 		} else if (c instanceof ScrollComboBox2) {
 			return ((ScrollComboBox2) c).getSelectedIndex();
+		} else if (c == instrumentTabPane) {
+			return instrumentTabPane.getSelectedIndex();
 		} else {
 			throw new IllegalArgumentException("UNSUPPORTED COMPONENT!" + c.getClass());
 		}

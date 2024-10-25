@@ -9,7 +9,6 @@ import org.vibehistorian.vibecomposer.Panels.InstPanel;
 import org.vibehistorian.vibecomposer.Panels.KnobPanel;
 import org.vibehistorian.vibecomposer.Popups.KnobValuePopup;
 import org.vibehistorian.vibecomposer.SwingUtils;
-import org.vibehistorian.vibecomposer.UndoManager;
 import org.vibehistorian.vibecomposer.VibeComposerGUI;
 
 import javax.swing.*;
@@ -487,7 +486,7 @@ public class JKnob extends JComponent
 			ctrlClick = true;
 		}
 
-		UndoManager.saveToHistory(this.parent(), updateAndGetValue());
+		VibeComposerGUI.actionUndoManager.saveToHistory(this.parent(), updateAndGetValue());
 
 		if (SwingUtilities.isLeftMouseButton(e)) {
 			Point mouseLoc = e.getPoint();

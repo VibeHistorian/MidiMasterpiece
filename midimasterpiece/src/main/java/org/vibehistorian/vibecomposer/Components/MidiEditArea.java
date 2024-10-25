@@ -173,7 +173,10 @@ public class MidiEditArea extends JComponent {
 						makeSelectedNotesCopy();
 					}
 				}
-				if (pop != null && saveToHistory) {
+				if (pop != null && saveToHistory
+						&& (SwingUtilities.isLeftMouseButton(evt) ||
+							SwingUtilities.isRightMouseButton(evt) ||
+							SwingUtilities.isMiddleMouseButton(evt))) {
 					values.remakeNoteStartTimes(true);
 					pop.saveToHistory();
 				}

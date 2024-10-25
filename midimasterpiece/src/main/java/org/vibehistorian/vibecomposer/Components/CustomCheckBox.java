@@ -1,13 +1,10 @@
 package org.vibehistorian.vibecomposer.Components;
 
+import org.vibehistorian.vibecomposer.VibeComposerGUI;
+
+import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-
-import javax.swing.Icon;
-import javax.swing.JCheckBox;
-import javax.swing.SwingConstants;
-
-import org.vibehistorian.vibecomposer.UndoManager;
 
 public class CustomCheckBox extends JCheckBox {
 
@@ -36,7 +33,7 @@ public class CustomCheckBox extends JCheckBox {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				UndoManager.saveToHistory(CustomCheckBox.this,
+				VibeComposerGUI.actionUndoManager.saveToHistory(CustomCheckBox.this,
 						CustomCheckBox.this.isSelected() ? 0 : 1);
 			}
 		});

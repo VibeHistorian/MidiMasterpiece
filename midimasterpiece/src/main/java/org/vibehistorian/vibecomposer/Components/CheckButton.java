@@ -1,19 +1,14 @@
 package org.vibehistorian.vibecomposer.Components;
 
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Graphics;
-import java.awt.Insets;
+import org.apache.commons.lang3.StringUtils;
+import org.vibehistorian.vibecomposer.OMNI;
+import org.vibehistorian.vibecomposer.VibeComposerGUI;
+
+import javax.swing.*;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.function.Consumer;
-
-import javax.swing.JButton;
-
-import org.apache.commons.lang3.StringUtils;
-import org.vibehistorian.vibecomposer.OMNI;
-import org.vibehistorian.vibecomposer.UndoManager;
-import org.vibehistorian.vibecomposer.VibeComposerGUI;
 
 public class CheckButton extends JButton {
 
@@ -44,7 +39,7 @@ public class CheckButton extends JButton {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				UndoManager.saveToHistory(CheckButton.this);
+				VibeComposerGUI.actionUndoManager.saveToHistory(CheckButton.this);
 				setSelected(!selected);
 			}
 

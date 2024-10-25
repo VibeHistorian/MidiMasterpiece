@@ -1,6 +1,12 @@
 package org.vibehistorian.vibecomposer.Components;
 
-import java.awt.Component;
+import org.vibehistorian.vibecomposer.Helpers.BoundsPopupMenuListener;
+import org.vibehistorian.vibecomposer.Panels.InstPanel;
+import org.vibehistorian.vibecomposer.SwingUtils;
+import org.vibehistorian.vibecomposer.VibeComposerGUI;
+
+import javax.swing.*;
+import java.awt.*;
 import java.awt.event.ItemEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -11,16 +17,6 @@ import java.util.Random;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
-import javax.swing.JButton;
-import javax.swing.JComboBox;
-import javax.swing.SwingUtilities;
-
-import org.vibehistorian.vibecomposer.SwingUtils;
-import org.vibehistorian.vibecomposer.UndoManager;
-import org.vibehistorian.vibecomposer.VibeComposerGUI;
-import org.vibehistorian.vibecomposer.Helpers.BoundsPopupMenuListener;
-import org.vibehistorian.vibecomposer.Panels.InstPanel;
 
 public class ScrollComboBox2<T> extends JComboBox<T> implements GloballyLockable {
 
@@ -142,7 +138,7 @@ public class ScrollComboBox2<T> extends JComboBox<T> implements GloballyLockable
 		}
 
 		if (interacting) {
-			UndoManager.saveToHistory(this);
+			VibeComposerGUI.actionUndoManager.saveToHistory(this);
 		}
 
 		if (isEnabled()) {
