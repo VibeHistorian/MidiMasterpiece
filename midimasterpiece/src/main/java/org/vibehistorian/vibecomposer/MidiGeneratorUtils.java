@@ -71,6 +71,9 @@ public class MidiGeneratorUtils {
 		if (targetNoteVariation < 1) {
 			targetNoteVariation = 1;
 		}
+		if (direction != MelodyUtils.NoteTargetDirection.ANY) {
+			targetNoteVariation *= 2;
+		}
 		Random rand = new Random(randomSeed);
 		List<Integer> multiDirs = new ArrayList<>();
 		for (Integer o : directions) {

@@ -2495,7 +2495,7 @@ public class VibeComposerGUI extends JFrame
 		JButton clearPatternSeeds = makeButton("Clear Presets", "ClearPatterns");
 
 		randomDrumMaxSwingAdjust = new DetachedKnobPanel("Max Swing+-", 20, 0, 50);
-		randomDrumSlide = new CustomCheckBox("Random Delay", false);
+		randomDrumSlide = new CustomCheckBox("Random Offset", false);
 		randomDrumUseChordFill = new CustomCheckBox("Fills", true);
 		randomDrumPattern = new CustomCheckBox("Patterns", true);
 		randomDrumVelocityPatternChance = new DetachedKnobPanel("Dynamic%", 50);
