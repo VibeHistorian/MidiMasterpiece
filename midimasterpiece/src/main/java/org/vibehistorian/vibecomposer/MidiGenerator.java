@@ -3337,6 +3337,11 @@ public class MidiGenerator implements JMC {
 
 					// |---x----------| -> |---|---------| -> old note's duration is intersection length, new note's offset is moved up by the same amount
 					double intersectionLength = intersection - currTime - n.getOffset();
+					// skip if either of the resulting 2 notes would be too short
+					if (intersectionLength - DBL_ERR < Durations.SIXTEENTH_NOTE/2 || (n.getDuration() - intersectionLength - DBL_ERR) < Durations.SIXTEENTH_NOTE/2) {
+						continue;
+					}
+
 					Note splitNote = new Note(originalPitch, 0, n.getDynamic());
 					splitNote.setDuration(n.getDuration() - intersectionLength);
 					splitNote.setOffset(n.getOffset() + intersectionLength);

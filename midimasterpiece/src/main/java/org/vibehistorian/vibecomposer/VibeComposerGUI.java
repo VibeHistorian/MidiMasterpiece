@@ -96,7 +96,7 @@ public class VibeComposerGUI extends JFrame
 	private static final long serialVersionUID = -677536546851756969L;
 
 	private static final String BUG_HUNT_MESSAGE = "You found a bug! Save your project as a new preset, and send the .xml to my email: vibehistorian@gmail.com!";
-	private static final String FILENAME_VALID_CHARACTERS = "[a-zA-Z0-9,\\-_']";
+	private static final String FILENAME_VALID_CHARACTERS = "[a-zA-Z0-9,\\-_ ']";
 	private static final String FILENAME_VALID_NAME = "^" + FILENAME_VALID_CHARACTERS + "+$";
 	private static final String MIDIS_FOLDER = "midis";
 	private static final String DRUMS_FOLDER = "drums";
@@ -1219,6 +1219,7 @@ public class VibeComposerGUI extends JFrame
 					+ presetName.replaceAll(FILENAME_VALID_CHARACTERS, ""), 2500);
 			return;
 		}
+		presetName = presetName.replaceAll(" ", "_");
 		File makeSavedDir = new File(PRESET_FOLDER);
 		makeSavedDir.mkdir();
 
