@@ -109,7 +109,7 @@ public class MidiGeneratorUtils {
 	}
 
 	public static int adjustChanceParamForTransition(int param, Section sec, int chordNum,
-			int chordSize, int maxEffect, double affectedMeasure, boolean reverseEffect) {
+			int chordSize, int maxEffect, double affectedMeasure, boolean reverseEffect, boolean clampChance) {
 		if (chordSize < 2 || !sec.isTransition()) {
 			return param;
 		}
@@ -134,7 +134,9 @@ public class MidiGeneratorUtils {
 		} else {
 			param -= maxEffect * effect * multiplier;
 		}
-		param = OMNI.clampChance(param);
+		if (clampChance) {
+			param = OMNI.clampChance(param);
+		}
 		//LG.d("New param: " + param);
 		return param;
 	}

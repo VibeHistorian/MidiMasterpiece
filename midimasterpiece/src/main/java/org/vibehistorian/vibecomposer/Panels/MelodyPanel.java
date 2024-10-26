@@ -36,7 +36,7 @@ public class MelodyPanel extends InstPanel {
 	private KnobPanel doubledRhythmChance = new KnobPanel("Doubled<br>Rhythm%", 0);
 	private KnobPanel splitChance = new KnobPanel("Split<br>Long%", 0);
 	private KnobPanel noteExceptionChance = new KnobPanel("Note<br> Exc.%", 25);
-	private KnobPanel speed = new KnobPanel("Speed", 50);
+	private KnobPanel speed = new KnobPanel("Speed", 50, -100, 100);
 	private KnobPanel leadChordsChance = new KnobPanel("Lead To<br>Chords%", 25);
 	private KnobPanel startNoteChance = new KnobPanel("Start%", 80);
 	private JCheckBox patternFlexible = new CustomCheckBox("Flex", true);
