@@ -601,12 +601,12 @@ public class ShowAreaBig extends JComponent {
 		Point viewPoint = ShowPanelBig.areaScrollPane.getViewport().getViewPosition();
 		g.setColor(OMNI.alphen(VibeComposerGUI.uiColor(), VibeComposerGUI.isDarkMode ? 120 : 140));
 		if (mousePoint != null) {
-			if (minX >= 0 && ShowPanelBig.scoreBox.getSelectedIndex() == 0) {
+			if (minX >= 0) {
 				Point mouseLoc = SwingUtils.getMouseLocation();
 				if (OMNI.mouseInComp(ShowPanelBig.areaScrollPane, mouseLoc)) {
 					Double placeInScore = sp.getSequencePosFromMousePos(mouseLoc);
 					g.drawLine(mouseLoc.x, 0, mouseLoc.x, areaHeight);
-					if (placeInScore != null) {
+					if (ShowPanelBig.scoreBox.getSelectedIndex() == 0 && placeInScore != null) {
 						int timePos = (int) (placeInScore * VibeComposerGUI.slider.getMaximum());
 						// TODO: buggy scrollpane dimension - extra 35px set when switching Big mode back
 						int scrollPaneDim = VibeComposerGUI.scrollPaneDimension.height < 500 ? 400 : 600;
