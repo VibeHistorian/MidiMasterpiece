@@ -1,5 +1,6 @@
 package org.vibehistorian.vibecomposer;
 
+import jm.constants.Pitches;
 import jm.music.data.Note;
 import jm.music.data.Phrase;
 import org.apache.commons.lang3.tuple.Pair;
@@ -515,12 +516,13 @@ public class MidiGeneratorUtils {
 		}
 		int previousPitch = fullMelody.get(0).getPitch();
 		if (previousPitch < 0) {
-			previousPitch = -1;
+			previousPitch = Pitches.REST;
 		}
 		for (int i = 1; i < fullMelody.size(); i++) {
 			Note n = fullMelody.get(i);
 			int pitch = n.getPitch();
-			if (pitch < 0) {
+			if (pitch < 0 || previousPitch == Pitches.REST) {
+				previousPitch = pitch;
 				continue;
 			}
 			// remove all instances of B-F and F-B (the only interval of 6 within the key)

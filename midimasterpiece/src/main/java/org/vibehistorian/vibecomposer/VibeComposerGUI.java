@@ -406,8 +406,12 @@ public class VibeComposerGUI extends JFrame
 	KnobPanel melodyReplaceAvoidNotes;
 	KnobPanel melodyMaxDirChanges;
 	public static KnobPanel melodyTargetNoteVariation;
-	public static RandomIntegerListButton melodyBlockChoicePreference;
 	VeloRect[] melodyBlockTypePreference;
+
+	// melody extra settings
+	public static RandomIntegerListButton melodyBlockChoicePreference;
+	public static JCheckBox melodyUseCustomDurations;
+	public static MidiEditArea melodyCustomDurations;
 
 	// bass gen settings
 	// - there's nothing here - 
@@ -655,6 +659,14 @@ public class VibeComposerGUI extends JFrame
 		vibeComposerGUI = new VibeComposerGUI("VibeComposer" + CURRENT_VERSION + " (BETA)");
 		vibeComposerGUI.setMainIcon();
 		vibeComposerGUI.init();
+
+		Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+			public void uncaughtException(Thread t, Throwable e) {
+				LG.e("Uncaught EXCEPTION!", e);
+				new TemporaryInfoPopup("Unknown error! " + BUG_HUNT_MESSAGE, 3000);
+			}
+		});
+
 		//Toolkit.getDefaultToolkit().getSystemEventQueue().push(new TimedEventQueue());
 		vibeComposerGUI.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
 	}
@@ -965,7 +977,8 @@ public class VibeComposerGUI extends JFrame
 					public boolean dispatchKeyEvent(KeyEvent e) {
 						if (!vibeComposerGUI.isFocused()
 								|| !vibeComposerGUI.isActive()
-								|| e.getID() != KeyEvent.KEY_RELEASED) {
+								|| e.getID() != KeyEvent.KEY_RELEASED
+								|| e.getSource() instanceof JTextField) {
 							return false;
 						}
 						if (e.isControlDown()) {
@@ -1173,7 +1186,8 @@ public class VibeComposerGUI extends JFrame
 					GUIPreset preset = unmarshallPreset(loadedFile);
 					loadPresetObject(preset);
 				} catch (JAXBException | IOException e) {
-					e.printStackTrace();
+					LG.e("Could not load preset!", e);
+					new TemporaryInfoPopup("Preset loading failed! " + BUG_HUNT_MESSAGE, 2000);
 					return;
 				}
 			}
@@ -1235,6 +1249,8 @@ public class VibeComposerGUI extends JFrame
 		JPanel scoreMidiPanel = new JPanel();
 		JPanel panelGenerationSettingsPanel = new JPanel();
 		JPanel chordChoicePanel = new JPanel();
+		JPanel melodyTweaksPanel = new JPanel();
+		melodyTweaksPanel.setLayout(new BorderLayout());
 		JPanel humanizationPanel = new JPanel();
 		JPanel instrumentsSettingsPanel = new JPanel();
 		JPanel pauseBehaviorPanel = new JPanel();
@@ -1245,6 +1261,7 @@ public class VibeComposerGUI extends JFrame
 		settingsMenuItems.put("COMPOSE", composeSettingsPanel);
 		settingsMenuItems.put("Score/Midi", scoreMidiPanel);
 		settingsMenuItems.put("Generation", panelGenerationSettingsPanel);
+		settingsMenuItems.put("Melody", melodyTweaksPanel);
 		settingsMenuItems.put("Chords", chordChoicePanel);
 		settingsMenuItems.put("Humanization", humanizationPanel);
 		settingsMenuItems.put("Instruments", instrumentsSettingsPanel);
@@ -1293,43 +1310,21 @@ public class VibeComposerGUI extends JFrame
 			sidePanel.add(butt);
 		}
 
-		// COMPOSE
+		initExtraSettingsCompose(composeSettingsPanel);
+		initExtraSettingsHumanize(humanizationPanel);
+		initExtraSettingsScore(scoreMidiPanel);
+		initExtraSettingsInstruments(instrumentsSettingsPanel);
+		initExtraSettingsPause(pauseBehaviorPanel);
+		initExtraSettingsChords(chordChoicePanel);
+		initExtraSettingsMelody(melodyTweaksPanel);
+		initExtraSettingsBpm(bpmLowHighPanel);
+		initExtraSettingsDisplay(displayStylePanel);
+		initExtraSettingsGeneration(panelGenerationSettingsPanel);
 
-		arrangementResetCustomPanelsOnCompose = makeCheckBox("Reset Customized Panels on Compose",
-				true, true);
-		randomizeTimingsOnCompose = makeCheckBox(
-				"<html>Randomize Global Swing/Beat Multiplier<br>on Compose</html>", true, true);
-		sidechainPatternsOnCompose = makeCheckBox("<html>Sidechain Patterns<br>on Compose</html>",
-				true, true);
-		copyChordsAfterGenerate = makeCheckBox("<html>Copy Chords<br>on Compose/Reg.</html>", true,
-				true);
+		initHelperPopups();
+	}
 
-		composeSettingsPanel.add(arrangementResetCustomPanelsOnCompose);
-		composeSettingsPanel.add(randomizeTimingsOnCompose);
-		composeSettingsPanel.add(sidechainPatternsOnCompose);
-		composeSettingsPanel.add(copyChordsAfterGenerate);
-
-
-		// HUMANIZATION
-		humanizeNotes = new DetachedKnobPanel("Humanize Notes<br>/10000", 150, 0, 1000);
-		humanizeDrums = new DetachedKnobPanel("Humanize Drums<br>/10000", 20, 0, 100);
-		globalNoteLengthMultiplier = new DetachedKnobPanel("Note Length Multiplier<br>/1000", 950,
-				250, 1000);
-
-		JPanel swingMultiPanel = new JPanel();
-		swingMultiPanel.setLayout(new GridLayout(0, 2, 10, 30));
-		swingUnitMultiplier = new ScrollComboBox<Double>(false);
-		ScrollComboBox.addAll(new Double[] { 0.5, 1.0, 2.0 }, swingUnitMultiplier);
-		swingUnitMultiplier.setSelectedIndex(0);
-
-		humanizationPanel.add(humanizeNotes);
-		humanizationPanel.add(humanizeDrums);
-		humanizationPanel.add(globalNoteLengthMultiplier);
-		swingMultiPanel.add(new JLabel("Swing Period Multiplier"));
-		swingMultiPanel.add(swingUnitMultiplier);
-		humanizationPanel.add(swingMultiPanel);
-
-
+	private void initExtraSettingsScore(JPanel scoreMidiPanel) {
 		// SCORE
 		JPanel padMidiPanel = new JPanel();
 		padMidiPanel.setLayout(new GridLayout(0, 2, 10, 30));
@@ -1369,7 +1364,9 @@ public class VibeComposerGUI extends JFrame
 		scoreMidiPanel.add(useMidiCC);
 		scoreMidiPanel.add(stretchMidi);
 		scoreMidiPanel.add(arrangementScaleMidiVelocity);
+	}
 
+	private void initExtraSettingsInstruments(JPanel instrumentsSettingsPanel) {
 		// INSTRUMENTS
 		JPanel allInstsPanel = new JPanel();
 
@@ -1419,11 +1416,12 @@ public class VibeComposerGUI extends JFrame
 		instrumentsSettingsPanel.add(allInstsPanel);
 		instrumentsSettingsPanel.add(soundbankPanel);
 		instrumentsSettingsPanel.add(transposeNotePreview);
+	}
 
-
+	private static void initExtraSettingsPause(JPanel pauseBehaviorPanel) {
 		// PAUSE
 		JPanel startFromPausePanel = new JPanel();
-		drumMappingPanel.setLayout(new GridLayout(0, 2, 10, 30));
+		startFromPausePanel.setLayout(new GridLayout(0, 2, 10, 30));
 		pauseBehaviorLabel = new JLabel("Start From Pause:");
 		pauseBehaviorCombobox = new ScrollComboBox<>(false);
 		startFromBar = new CustomCheckBox("Start From Bar", true);
@@ -1450,7 +1448,9 @@ public class VibeComposerGUI extends JFrame
 		pauseBehaviorPanel.add(rememberLastPos);
 		pauseBehaviorPanel.add(snapStartToBeat);
 		pauseBehaviorPanel.add(moveStartToCustomizedSection);
+	}
 
+	private void initExtraSettingsChords(JPanel chordChoicePanel) {
 		// CHORDS
 		spiceFlattenBigChords = new CustomCheckBox("Spicy Voicing", false);
 		useChordFormula = new CustomCheckBox("Chord Formula", true);
@@ -1464,7 +1464,80 @@ public class VibeComposerGUI extends JFrame
 		chordChoicePanel.add(randomChordVoicingChance);
 		chordChoicePanel.add(spiceFlattenBigChords);
 		chordChoicePanel.add(squishChordsProgressively);
+	}
 
+	private void initExtraSettingsMelody(JPanel melodyGenerationSettingsPanel) {
+		// MELODY
+		JPanel melodyBlockChoicePreferencePanel = new JPanel();
+		melodyBlockChoicePreferencePanel.setLayout(new GridLayout(0, 2));
+		melodyBlockChoicePreference = new RandomIntegerListButton("0", null);
+		melodyBlockChoicePreference.setValues(MelodyUtils.BLOCK_CHANGE_JUMP_PREFERENCE);
+		melodyBlockChoicePreference.min = 0;
+		melodyBlockChoicePreference.max = 7;
+		melodyBlockChoicePreference.editableCount = false;
+		melodyBlockChoicePreference.setRandGenerator(e -> {
+			List<Integer> scrambledDefaultPreference = new ArrayList<>(MelodyUtils.BLOCK_CHANGE_JUMP_PREFERENCE);
+			Collections.shuffle(scrambledDefaultPreference, new Random());
+			return scrambledDefaultPreference;
+		});
+		melodyBlockChoicePreference.setTextGenerator(e -> StringUtils.join(melodyBlockChoicePreference.getRandGenerator()
+				.apply(new Object()),","));
+		melodyBlockChoicePreference.setPostFunc(e -> {
+			// verify it's set correctly
+			List<Integer> vals = melodyBlockChoicePreference.getValues();
+			if (vals.size() > 1 && (vals.size() != MelodyUtils.BLOCK_CHANGE_JUMP_PREFERENCE.size() ||
+					!vals.containsAll(MelodyUtils.BLOCK_CHANGE_JUMP_PREFERENCE))) {
+				melodyBlockChoicePreference.setValues(MelodyUtils.BLOCK_CHANGE_JUMP_PREFERENCE, false);
+				return;
+			}
+		});
+
+		melodyUseCustomDurations = new CustomCheckBox("Use custom durations", true);
+
+		melodyBlockChoicePreferencePanel.add(new JLabel("<html>Melody Block Choice<br>Preferred Order</html>"));
+		melodyBlockChoicePreferencePanel.add(melodyBlockChoicePreference);
+		melodyGenerationSettingsPanel.add(melodyBlockChoicePreferencePanel);
+		melodyGenerationSettingsPanel.add(melodyUseCustomDurations);
+		//melodyGenerationSettingsPanel.add("South", melodyCustomDurations);
+	}
+
+	private void initExtraSettingsGeneration(JPanel panelGenerationSettingsPanel) {
+		// GENERATION
+
+		//          scale
+		customMidiForceScale = new CustomCheckBox("Force MIDI Melody Notes To Scale", false);
+		reuseMidiChannelAfterCopy = new CustomCheckBox("Reuse MIDI Ch. After Copy (Cc)", true);
+		transposedNotesForceScale = new CustomCheckBox("Force Transposed Notes To Scale", false);
+
+		orderedTransposeGeneration = new CustomCheckBox("Ordered Transpose Generation", false);
+		configHistoryStoreRegeneratedTracks = new CustomCheckBox(
+				"Track History - Include Regenerated Tracks", true);
+		melodyPatternFlip = new CustomCheckBox("Inverse Melody1 Pattern", false);
+		patternApplyPausesWhenGenerating = new CustomCheckBox("Apply Pause% on Generate", true);
+
+
+		JPanel keyChangePanel = new JPanel();
+		keyChangePanel.setLayout(new GridLayout(0, 2, 10, 30));
+		keyChangeTypeSelection = new ScrollComboBox<String>(false);
+		ScrollComboBox.addAll(new String[] { "PIVOT", "TWOFIVEONE", "DIRECT" },
+				keyChangeTypeSelection);
+		keyChangeTypeSelection.setVal("TWOFIVEONE");
+		keyChangeTypeSelection.setPreferredSize(new Dimension(250, 30));
+		keyChangeTypeSelection.addItemListener(this);
+		keyChangePanel.add(new JLabel("<html>Key Change<br>Type:</html>"));
+		keyChangePanel.add(keyChangeTypeSelection);
+
+		panelGenerationSettingsPanel.add(customMidiForceScale);
+		panelGenerationSettingsPanel.add(transposedNotesForceScale);
+		panelGenerationSettingsPanel.add(reuseMidiChannelAfterCopy);
+		panelGenerationSettingsPanel.add(orderedTransposeGeneration);
+		panelGenerationSettingsPanel.add(configHistoryStoreRegeneratedTracks);
+		//panelGenerationSettingsPanel.add(melodyPatternFlip); -- pattern flip is now also available per-instrument..
+		panelGenerationSettingsPanel.add(patternApplyPausesWhenGenerating);
+		panelGenerationSettingsPanel.add(keyChangePanel);
+	}
+
+	private void initExtraSettingsBpm(JPanel bpmLowHighPanel) {
 		// BPM
 		arpAffectsBpm = new CustomCheckBox("BPM slowed by ARP", false);
 		bpmLow = new DetachedKnobPanel("Min<br>BPM.", 60, 20, 249);
@@ -1472,7 +1545,9 @@ public class VibeComposerGUI extends JFrame
 		bpmLowHighPanel.add(bpmLow);
 		bpmLowHighPanel.add(bpmHigh);
 		bpmLowHighPanel.add(arpAffectsBpm);
+	}
 
+	private void initExtraSettingsDisplay(JPanel displayStylePanel) {
 		// DISPLAY
 		displayVeloRectValues = new CustomCheckBox("Display Bar Values", true);
 		knobControlByDragging = new CustomCheckBox("Knob Up-Down Control", false);
@@ -1538,68 +1613,44 @@ public class VibeComposerGUI extends JFrame
 		displayStylePanel.add(highlightScoreNotes);
 		displayStylePanel.add(customFilenameAddTimestamp);
 		displayStylePanel.add(miniScorePopup);
+	}
 
-		// GENERATION
+	private static void initExtraSettingsHumanize(JPanel humanizationPanel) {
+		// HUMANIZATION
+		humanizeNotes = new DetachedKnobPanel("Humanize Notes<br>/10000", 150, 0, 1000);
+		humanizeDrums = new DetachedKnobPanel("Humanize Drums<br>/10000", 20, 0, 100);
+		globalNoteLengthMultiplier = new DetachedKnobPanel("Note Length Multiplier<br>/1000", 950,
+				250, 1000);
 
-		//          scale
-		customMidiForceScale = new CustomCheckBox("Force MIDI Melody Notes To Scale", false);
-		reuseMidiChannelAfterCopy = new CustomCheckBox("Reuse MIDI Ch. After Copy (Cc)", true);
-		transposedNotesForceScale = new CustomCheckBox("Force Transposed Notes To Scale", false);
+		JPanel swingMultiPanel = new JPanel();
+		swingMultiPanel.setLayout(new GridLayout(0, 2, 10, 30));
+		swingUnitMultiplier = new ScrollComboBox<Double>(false);
+		ScrollComboBox.addAll(new Double[] { 0.5, 1.0, 2.0 }, swingUnitMultiplier);
+		swingUnitMultiplier.setSelectedIndex(0);
 
-		orderedTransposeGeneration = new CustomCheckBox("Ordered Transpose Generation", false);
-		configHistoryStoreRegeneratedTracks = new CustomCheckBox(
-				"Track History - Include Regenerated Tracks", true);
-		JPanel melodyBlockChoicePreferencePanel = new JPanel();
-		melodyBlockChoicePreferencePanel.setLayout(new GridLayout(0, 2, 10, 30));
-		melodyBlockChoicePreferencePanel.add(new JLabel("<html>Melody Block Choice<br>Preferred Order</html>"));
-		melodyBlockChoicePreference = new RandomIntegerListButton("0", null);
-		melodyBlockChoicePreference.setValues(MelodyUtils.BLOCK_CHANGE_JUMP_PREFERENCE);
-		melodyBlockChoicePreference.min = 0;
-		melodyBlockChoicePreference.max = 7;
-		melodyBlockChoicePreference.editableCount = false;
-		melodyBlockChoicePreference.setRandGenerator(e -> {
-			List<Integer> scrambledDefaultPreference = new ArrayList<>(MelodyUtils.BLOCK_CHANGE_JUMP_PREFERENCE);
-			Collections.shuffle(scrambledDefaultPreference, new Random());
-			return scrambledDefaultPreference;
-		});
-		melodyBlockChoicePreference.setTextGenerator(e -> StringUtils.join(melodyBlockChoicePreference.getRandGenerator()
-				.apply(new Object()),","));
-		melodyBlockChoicePreference.setPostFunc(e -> {
-			// verify it's set correctly
-			List<Integer> vals = melodyBlockChoicePreference.getValues();
-			if (vals.size() > 1 && (vals.size() != MelodyUtils.BLOCK_CHANGE_JUMP_PREFERENCE.size() ||
-				!vals.containsAll(MelodyUtils.BLOCK_CHANGE_JUMP_PREFERENCE))) {
-				melodyBlockChoicePreference.setValues(MelodyUtils.BLOCK_CHANGE_JUMP_PREFERENCE, false);
-				return;
-			}
-		});
-		melodyBlockChoicePreferencePanel.add(melodyBlockChoicePreference);
-		melodyPatternFlip = new CustomCheckBox("Inverse Melody1 Pattern", false);
-		patternApplyPausesWhenGenerating = new CustomCheckBox("Apply Pause% on Generate", true);
+		humanizationPanel.add(humanizeNotes);
+		humanizationPanel.add(humanizeDrums);
+		humanizationPanel.add(globalNoteLengthMultiplier);
+		swingMultiPanel.add(new JLabel("Swing Period Multiplier"));
+		swingMultiPanel.add(swingUnitMultiplier);
+		humanizationPanel.add(swingMultiPanel);
+	}
 
+	private void initExtraSettingsCompose(JPanel composeSettingsPanel) {
+		// COMPOSE
+		arrangementResetCustomPanelsOnCompose = makeCheckBox("Reset Customized Panels on Compose",
+				true, true);
+		randomizeTimingsOnCompose = makeCheckBox(
+				"<html>Randomize Global Swing/Beat Multiplier<br>on Compose</html>", true, true);
+		sidechainPatternsOnCompose = makeCheckBox("<html>Sidechain Patterns<br>on Compose</html>",
+				true, true);
+		copyChordsAfterGenerate = makeCheckBox("<html>Copy Chords<br>on Compose/Reg.</html>", true,
+				true);
 
-		JPanel keyChangePanel = new JPanel();
-		keyChangePanel.setLayout(new GridLayout(0, 2, 10, 30));
-		keyChangeTypeSelection = new ScrollComboBox<String>(false);
-		ScrollComboBox.addAll(new String[] { "PIVOT", "TWOFIVEONE", "DIRECT" },
-				keyChangeTypeSelection);
-		keyChangeTypeSelection.setVal("TWOFIVEONE");
-		keyChangeTypeSelection.setPreferredSize(new Dimension(250, 30));
-		keyChangeTypeSelection.addItemListener(this);
-		keyChangePanel.add(new JLabel("<html>Key Change<br>Type:</html>"));
-		keyChangePanel.add(keyChangeTypeSelection);
-
-		panelGenerationSettingsPanel.add(customMidiForceScale);
-		panelGenerationSettingsPanel.add(transposedNotesForceScale);
-		panelGenerationSettingsPanel.add(reuseMidiChannelAfterCopy);
-		panelGenerationSettingsPanel.add(orderedTransposeGeneration);
-		panelGenerationSettingsPanel.add(configHistoryStoreRegeneratedTracks);
-		panelGenerationSettingsPanel.add(melodyBlockChoicePreferencePanel);
-		//panelGenerationSettingsPanel.add(melodyPatternFlip); -- pattern flip is now also available per-instrument..
-		panelGenerationSettingsPanel.add(patternApplyPausesWhenGenerating);
-		panelGenerationSettingsPanel.add(keyChangePanel);
-
-		initHelperPopups();
+		composeSettingsPanel.add(arrangementResetCustomPanelsOnCompose);
+		composeSettingsPanel.add(randomizeTimingsOnCompose);
+		composeSettingsPanel.add(sidechainPatternsOnCompose);
+		composeSettingsPanel.add(copyChordsAfterGenerate);
 	}
 
 	private void initSoloMutersAndTrackControl(int startY, int anchorSide) {
@@ -1922,8 +1973,8 @@ public class VibeComposerGUI extends JFrame
 
 	private JPanel initMelodySettingsPlusPlus() {
 		JPanel melodyBlockTypePreferences = new JPanel();
-		melodyBlockTypePreference = new VeloRect[5];
-		for (int i = 0; i < 5; i++) {
+		melodyBlockTypePreference = new VeloRect[BlockType.values().length];
+		for (int i = 0; i < BlockType.values().length; i++) {
 			melodyBlockTypePreference[i] = VeloRect.percent(BlockType.values()[i].defaultChance);
 			melodyBlockTypePreferences.add(melodyBlockTypePreference[i]);
 		}
@@ -5989,23 +6040,7 @@ public class VibeComposerGUI extends JFrame
 					&& userChords.getChordletsRaw().size() > 0;
 			if (customChords || userDurationsEnabled.isSelected()) {
 				List<String> chords = userChords.getChordList();
-				List<Double> durations = new ArrayList<>();
-				String[] durationSplit = userChordsDurations.getText().split(",");
-				if ((customChords && durationSplit.length < chords.size())
-						|| !userDurationsEnabled.isSelected()) {
-					durationSplit = null;
-				}
-
-				try {
-					for (int i = 0; i < (customChords ? chords.size()
-							: durationSplit.length); i++) {
-						durations.add(durationSplit != null
-								? (stretchMidi.getInt() * Double.valueOf(durationSplit[i]) / 100.0)
-								: MidiGenerator.Durations.WHOLE_NOTE);
-					}
-				} catch (Exception e) {
-					new TemporaryInfoPopup("Invalid durations!", 3000);
-				}
+				List<Double> durations = getUserChordDurations();
 
 				MidiGenerator.userChordsDurations = durations;
 
@@ -6047,6 +6082,29 @@ public class VibeComposerGUI extends JFrame
 			e.printStackTrace();
 		}
 
+	}
+
+	public static List<Double> getUserChordDurations() {
+		boolean forceDefault = !userDurationsEnabled.isSelected();
+
+		List<Double> durations = new ArrayList<>();
+		String[] durationSplit = userChordsDurations.getText().split(",");
+		boolean customChords = userChordsEnabled.isSelected()
+				&& userChords.getChordletsRaw().size() > 0;
+		boolean coversAllCustomChords = durationSplit.length >= userChords.chordCount();
+
+		try {
+			for (int i = 0; i < (customChords && coversAllCustomChords ? userChords.chordCount()
+					: durationSplit.length); i++) {
+				durations.add((durationSplit != null && !forceDefault && coversAllCustomChords)
+						? (stretchMidi.getInt() * Double.valueOf(durationSplit[i]) / 100.0)
+						: MidiGenerator.Durations.WHOLE_NOTE);
+			}
+		} catch (Exception e) {
+			new TemporaryInfoPopup("Invalid durations!", 3000);
+		}
+
+		return durations;
 	}
 
 	private Integer prepareMainSeed(boolean regenerate) {
@@ -7425,10 +7483,12 @@ public class VibeComposerGUI extends JFrame
 				savedIndicatorLabel.setVisible(true);
 			} catch (IOException | JAXBException e) {
 				// Auto-generated catch block
-				e.printStackTrace();
+				LG.e("Error saving file: ", e);
 			}
 		} else {
 			LG.i(("currentMidi is NULL!"));
+			LG.w("Cannot save config file without a successful compose/regenerate first!");
+			new TemporaryInfoPopup("Cannot save config file without a successful compose/regenerate first!", 1500);
 		}
 	}
 
@@ -8296,6 +8356,7 @@ public class VibeComposerGUI extends JFrame
 
 		gc.setMelodyBlockChoicePreference(melodyBlockChoicePreference.getValues());
 		gc.setMelodyBlockTypePreference(Arrays.stream(melodyBlockTypePreference).map(e -> e.getValue()).collect(Collectors.toList()));
+		gc.setMelodyUseCustomDurations(melodyUseCustomDurations.isSelected());
 
 
 		// chords
@@ -8344,6 +8405,9 @@ public class VibeComposerGUI extends JFrame
 		if (gc.getMelodyNotes() != null) {
 			MelodyMidiDropPane.userMelody = gc.getMelodyNotes().makePhrase();
 			dropPane.getMessage().setText("~MELODY LOADED FROM FILE~");
+		} else {
+			MelodyMidiDropPane.userMelody = null;
+			dropPane.getMessage().setText(" * * Drag'n'Drop MIDI Here * * ");
 		}
 
 		// seed
@@ -8450,6 +8514,7 @@ public class VibeComposerGUI extends JFrame
 			int value = i < gc.getMelodyBlockTypePreference().size() ? gc.getMelodyBlockTypePreference().get(i) : BlockType.values()[i].defaultChance;
 			melodyBlockTypePreference[i].setValue(value);
 		}
+		melodyUseCustomDurations.setSelected(gc.isMelodyUseCustomDurations());
 
 		// chords
 		spiceChance.setInt(gc.getSpiceChance());

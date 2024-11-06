@@ -343,7 +343,7 @@ public class ShowPanelBig extends JPanel {
 							+ ", end: " + usableEnd);*/
 
 		double percentage = xy.getX() / usableEnd;
-		LG.d("Percentage in MIDI: " + percentage);
+		//LG.d("Percentage in MIDI: " + percentage);
 					/*LG.i("Slider ratio: "
 							+ (VibeComposerGUI.slider.getMaximum() + VibeComposerGUI.delayed())
 									/ VibeComposerGUI.beatFromBpm(0));

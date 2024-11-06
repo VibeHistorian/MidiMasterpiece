@@ -65,12 +65,6 @@ public class MidiEditPopup extends CloseablePopup {
 	public static final int baseMargin = 5;
 	public static int trackScope = 1;
 	public static int trackScopeUpDown = 0;
-	public static final double[] TIME_GRID = new double[] { 0.125, 1 / 6.0, 0.25, 1 / 3.0, 0.5,
-			2 / 3.0, 1.0, 4 / 3.0, 2.0, 4.0 };
-
-	public static double getTimeGrid() {
-		return TIME_GRID[snapToTimeGridChoice];
-	}
 
 	public ScrollComboBox<String> highlightMode = new ScrollComboBox<>(false);
 	public ScrollComboBox<String> snapToTimeGrid = new ScrollComboBox<>(false);
@@ -127,6 +121,7 @@ public class MidiEditPopup extends CloseablePopup {
 		mveaPanel.setPreferredSize(new Dimension(1500, 600));
 		mveaPanel.setMinimumSize(new Dimension(1500, 600));
 		mvea = new MidiEditArea(126, 1, null);
+		mvea.setRange(0,127);
 		mvea.setPop(this);
 		mvea.setPreferredSize(new Dimension(1500, 600));
 		mveaPanel.add(mvea);
@@ -149,7 +144,7 @@ public class MidiEditPopup extends CloseablePopup {
 		for (PhraseNote pn : values) {
 			if (pn.getStartTime() < 0) {
 				displayingPhraseMarginX = true;
-			} else if (pn.getStartTime() + pn.getDuration() > MidiEditArea.sectionLength) {
+			} else if (pn.getStartTime() + pn.getDuration() > mvea.sectionLength) {
 				displayingPhraseMarginX = true;
 			}
 		}
@@ -259,8 +254,8 @@ public class MidiEditPopup extends CloseablePopup {
 				for (int i = 0; i < size; i++) {
 					if (mvea.getValues().get(i).getPitch() >= 0) {
 						int pitch = rnd
-								.nextInt(mvea.max - mvea.min + 1 - trackScope * baseMargin * 2)
-								+ mvea.min + baseMargin * trackScope;
+								.nextInt(mvea.currentMax - mvea.currentMin + 1 - trackScope * baseMargin * 2)
+								+ mvea.currentMin + baseMargin * trackScope;
 						if (isSnapPitch()) {
 							int closestNormalized = MidiUtils
 									.getClosestFromList(MidiUtils.MAJ_SCALE, pitch % 12);
@@ -323,11 +318,11 @@ public class MidiEditPopup extends CloseablePopup {
 			PhraseNotes pn = new PhraseNotes(e);
 			double length = pn.stream().map(f -> f.getRv()).mapToDouble(f -> f).sum();
 			LG.i("Dropped MIDI Length: " + length);
-			if (length > MidiEditArea.sectionLength + MidiGenerator.DBL_ERR) {
+			if (length > mvea.sectionLength + MidiGenerator.DBL_ERR) {
 				return null;
-			} else if (length < MidiEditArea.sectionLength - MidiGenerator.DBL_ERR) {
+			} else if (length < mvea.sectionLength - MidiGenerator.DBL_ERR) {
 				PhraseNote lastNote = pn.get(pn.size() - 1);
-				lastNote.setRv(lastNote.getRv() + MidiEditArea.sectionLength - length);
+				lastNote.setRv(lastNote.getRv() + mvea.sectionLength - length);
 			}
 			pn.forEach(f -> f.setPitch(f.getPitch() - VibeComposerGUI.transposeScore.getInt()));
 			setCustomValues(pn.copy());
@@ -663,8 +658,8 @@ public class MidiEditPopup extends CloseablePopup {
 			vmax += values.stream().map(e -> e.getPitch()).filter(e -> e >= 0).mapToInt(e -> e)
 					.max().getAsInt();
 		}
-		mvea.setMin(Math.min(mvea.min, vmin));
-		mvea.setMax(Math.max(mvea.max, vmax));
+		mvea.setCurrentMin(Math.min(mvea.currentMin, vmin));
+		mvea.setCurrentMax(Math.max(mvea.currentMax, vmax));
 
 
 		mvea.part = part;
@@ -922,8 +917,8 @@ public class MidiEditPopup extends CloseablePopup {
 		PhraseNotes pn = MidiGenerator.gc.getPattern(generatedPat);
 		VibeComposerGUI.guiConfig.putPattern(generatedPat, pn);
 
-		mvea.min = 110;
-		mvea.max = 10;
+		mvea.currentMin = 110;
+		mvea.currentMax = 10;
 
 		if (oldPattern != null) {
 			sec.putPattern(part, partOrder, oldPattern);
@@ -943,7 +938,7 @@ public class MidiEditPopup extends CloseablePopup {
 
 	public void repaintMvea() {
 		mvea.setAndRepaint();
-		MidiEditArea.sectionLength = mvea.getValues().stream().map(e -> e.getRv())
+		mvea.sectionLength = mvea.getValues().stream().map(e -> e.getRv())
 				.mapToDouble(e -> e).sum();
 		if (sec != null) {
 			UsedPattern pat = sec.getPattern(part, partOrder);

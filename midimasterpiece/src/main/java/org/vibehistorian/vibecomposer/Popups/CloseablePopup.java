@@ -1,20 +1,18 @@
 package org.vibehistorian.vibecomposer.Popups;
 
+import org.vibehistorian.vibecomposer.SwingUtils;
+
+import javax.swing.*;
 import java.awt.*;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.swing.*;
-
-import org.vibehistorian.vibecomposer.SwingUtils;
-import org.vibehistorian.vibecomposer.VibeComposerGUI;
-
 public abstract class CloseablePopup {
 	final JDialog frame;
 	public static Map<Integer, CloseablePopup> currentPopupMap = new HashMap<>();
-	private Integer popupType = 0;
+	private Integer popupType = 0; // max : 15
 	public static WindowListener EMPTY_WINDOW_LISTENER = new WindowListener() {
 		@Override
 		public void windowOpened(WindowEvent e) {

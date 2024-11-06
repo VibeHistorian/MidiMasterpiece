@@ -17,7 +17,9 @@ public enum BlockType {
     NEIGHBORY(100),
     ARPY(100),
     CHORDY(100),
-    WAVY(100);
+    WAVY(100),
+    INTERVAL(100),
+    NOTE(100);
 
     public int defaultChance;
     public List<Integer[]> blocks = new ArrayList<>();
@@ -39,6 +41,81 @@ public enum BlockType {
 
     public static Integer blockChange(Integer[] block) {
         return block[block.length - 1] - block[0];
+    }
+
+    static {
+
+        // TODO: way too crazy idea - use permutations of the array presets for extreme variation (first 0 locked, the rest varies wildly)
+
+
+        SCALEY.blocks.add(block(0, 1, 2));
+        SCALEY.blocks.add(block(0, 1, 2, 3));
+        SCALEY.blocks.add(block(0, 1, 4));
+        SCALEY.blocks.add(block(0, 1, 2, 1));
+        SCALEY.blocks.add(block(0, 4, 2));
+        SCALEY.blocks.add(block(0, 1, 2, 0));
+        SCALEY.blocks.add(block(0, 1, 2, 4));
+        SCALEY.blocks.add(block(0, 0, 0));
+
+        NEIGHBORY.blocks.add(block(0, -1, 0));
+        NEIGHBORY.blocks.add(block(0, 1, 0, 1));
+        NEIGHBORY.blocks.add(block(0, 1, -1));
+        NEIGHBORY.blocks.add(block(0, -1, 0, 1));
+        NEIGHBORY.blocks.add(block(0, -1, 2));
+        NEIGHBORY.blocks.add(block(0, 1, -1, 0));
+        NEIGHBORY.blocks.add(block(0, -1, 0, 2));
+        NEIGHBORY.blocks.add(block(0, 1, 3, 2));
+        NEIGHBORY.blocks.add(block(0, 0, -1, 0));
+
+
+        CHORDY.blocks.add(block(0, 2, 4));
+        CHORDY.blocks.add(block(0, 4, 2));
+        CHORDY.blocks.add(block(0, 4, 2, 7));
+        CHORDY.blocks.add(block(0, 7, 4, 2));
+
+        ARPY.blocks.add(block(0, 2, 0, 2));
+        ARPY.blocks.add(block(0, 2, 1));
+        ARPY.blocks.add(block(0, 2, 4, 2));
+        ARPY.blocks.add(block(0, 2, 1, 3));
+        ARPY.blocks.add(block(0, 2, 3));
+        ARPY.blocks.add(block(0, 3, 1, 2));
+        ARPY.blocks.add(block(0, 1, 4, 5));
+        ARPY.blocks.add(block(0, 1, 7, 6));
+        ARPY.blocks.add(block(0, 1, 6, 7));
+		/*ARPY.blocks.add(block(0, 3, 5));
+		ARPY.blocks.add(block(0, 4, 6));
+		ARPY.blocks.add(block(0, 4, 7));*/
+
+        WAVY.blocks.add(block(0, -2, 3, 4));
+        WAVY.blocks.add(block(0, -2, 2, 6));
+        WAVY.blocks.add(block(0, -2, 3, 6));
+        WAVY.blocks.add(block(0, -2, -1, 2));
+        WAVY.blocks.add(block(0, -1, -2, 1));
+        WAVY.blocks.add(block(0, 1, -1, 2));
+        WAVY.blocks.add(block(0, 2, -1, -2));
+        WAVY.blocks.add(block(0, -3, -2, -1));
+
+        INTERVAL.blocks.add(block(0, 0));
+        INTERVAL.blocks.add(block(0, 1));
+        INTERVAL.blocks.add(block(0, 2));
+        INTERVAL.blocks.add(block(0, 3));
+        INTERVAL.blocks.add(block(0, 4));
+        INTERVAL.blocks.add(block(0, 5));
+        INTERVAL.blocks.add(block(0, 7));
+
+        NOTE.blocks.add(block(0));
+
+
+        List<Pair<Integer, Integer[]>> allBlocks = new ArrayList<>();
+        for (BlockType blockType : BlockType.values()) {
+            blockType.blocks.forEach(e -> allBlocks.add(Pair.of(blockType.ordinal(), e)));
+            AVAILABLE_BLOCK_CHANGES_PER_TYPE.put(blockType.ordinal(),
+                    blockType.blocks.stream().map(e -> blockChange(e)).collect(Collectors.toSet()));
+        }
+
+        BLOCK_CHANGE_MAP = allBlocks.stream()
+                .collect(Collectors.groupingBy(e -> blockChange(e.getRight())));
+        //LG.i("BLOCK_CHANGE_MAP:" + BLOCK_CHANGE_MAP);
     }
 
     public static List<Integer[]> getBlocksForType(Integer type) {
@@ -106,70 +183,5 @@ public enum BlockType {
             }
         }
         return false;
-    }
-
-    static {
-
-        // TODO: way too crazy idea - use permutations of the array presets for extreme variation (first 0 locked, the rest varies wildly)
-
-
-        SCALEY.blocks.add(block(0, 1, 2));
-        SCALEY.blocks.add(block(0, 1, 2, 3));
-        SCALEY.blocks.add(block(0, 1, 4));
-        SCALEY.blocks.add(block(0, 1, 2, 1));
-        SCALEY.blocks.add(block(0, 4, 2));
-        SCALEY.blocks.add(block(0, 1, 2, 0));
-        SCALEY.blocks.add(block(0, 1, 2, 4));
-        SCALEY.blocks.add(block(0, 0, 0));
-
-        NEIGHBORY.blocks.add(block(0, -1, 0));
-        NEIGHBORY.blocks.add(block(0, 1, 0, 1));
-        NEIGHBORY.blocks.add(block(0, 1, -1));
-        NEIGHBORY.blocks.add(block(0, -1, 0, 1));
-        NEIGHBORY.blocks.add(block(0, -1, 2));
-        NEIGHBORY.blocks.add(block(0, 1, -1, 0));
-        NEIGHBORY.blocks.add(block(0, -1, 0, 2));
-        NEIGHBORY.blocks.add(block(0, 1, 3, 2));
-        NEIGHBORY.blocks.add(block(0, 0, -1, 0));
-
-
-        CHORDY.blocks.add(block(0, 2, 4));
-        CHORDY.blocks.add(block(0, 4, 2));
-        CHORDY.blocks.add(block(0, 4, 2, 7));
-        CHORDY.blocks.add(block(0, 7, 4, 2));
-
-        ARPY.blocks.add(block(0, 2, 0, 2));
-        ARPY.blocks.add(block(0, 2, 1));
-        ARPY.blocks.add(block(0, 2, 4, 2));
-        ARPY.blocks.add(block(0, 2, 1, 3));
-        ARPY.blocks.add(block(0, 2, 3));
-        ARPY.blocks.add(block(0, 3, 1, 2));
-        ARPY.blocks.add(block(0, 1, 4, 5));
-        ARPY.blocks.add(block(0, 1, 7, 6));
-        ARPY.blocks.add(block(0, 1, 6, 7));
-		/*ARPY.blocks.add(block(0, 3, 5));
-		ARPY.blocks.add(block(0, 4, 6));
-		ARPY.blocks.add(block(0, 4, 7));*/
-
-        WAVY.blocks.add(block(0, -2, 3, 4));
-        WAVY.blocks.add(block(0, -2, 2, 6));
-        WAVY.blocks.add(block(0, -2, 3, 6));
-        WAVY.blocks.add(block(0, -2, -1, 2));
-        WAVY.blocks.add(block(0, -1, -2, 1));
-        WAVY.blocks.add(block(0, 1, -1, 2));
-        WAVY.blocks.add(block(0, 2, -1, -2));
-        WAVY.blocks.add(block(0, -3, -2, -1));
-
-
-        List<Pair<Integer, Integer[]>> allBlocks = new ArrayList<>();
-        for (BlockType blockType : BlockType.values()) {
-            blockType.blocks.forEach(e -> allBlocks.add(Pair.of(blockType.ordinal(), e)));
-            AVAILABLE_BLOCK_CHANGES_PER_TYPE.put(blockType.ordinal(),
-                    blockType.blocks.stream().map(e -> blockChange(e)).collect(Collectors.toSet()));
-        }
-
-        BLOCK_CHANGE_MAP = allBlocks.stream()
-                .collect(Collectors.groupingBy(e -> blockChange(e.getRight())));
-        //LG.i("BLOCK_CHANGE_MAP:" + BLOCK_CHANGE_MAP);
     }
 }

@@ -1,33 +1,20 @@
 package org.vibehistorian.vibecomposer.Panels;
 
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.GridLayout;
-import java.awt.Toolkit;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import org.apache.commons.lang3.StringUtils;
+import org.vibehistorian.vibecomposer.Components.VeloRect;
+import org.vibehistorian.vibecomposer.LG;
+import org.vibehistorian.vibecomposer.OMNI;
+import org.vibehistorian.vibecomposer.Popups.CloseablePopup;
+
+import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowEvent;
 import java.util.Timer;
 import java.util.TimerTask;
-
-import javax.swing.BoxLayout;
-import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JTextField;
-import javax.swing.SwingUtilities;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
-
-import org.apache.commons.lang3.StringUtils;
-import org.vibehistorian.vibecomposer.LG;
-import org.vibehistorian.vibecomposer.OMNI;
-import org.vibehistorian.vibecomposer.Components.VeloRect;
-import org.vibehistorian.vibecomposer.Popups.CloseablePopup;
 
 public class NumPanel extends JPanel {
 
@@ -75,59 +62,30 @@ public class NumPanel extends JPanel {
 			int numI = i + 1;
 			if (i < 9) {
 				numButtons[i] = new JButton(numI + "");
-				numButtons[i].addActionListener(new ActionListener() {
-					@Override
-					public void actionPerformed(ActionEvent e) {
-						removeSelectedAndWrite("" + numI, false);
-					}
-
-				});
+				numButtons[i].addActionListener(e -> removeSelectedAndWrite("" + numI, false));
 			} else {
 				numButtons[i] = new JButton("0");
-				numButtons[i].addActionListener(new ActionListener() {
-					@Override
-					public void actionPerformed(ActionEvent e) {
-						removeSelectedAndWrite("0", false);
-					}
-
-				});
+				numButtons[i].addActionListener(e -> removeSelectedAndWrite("0", false));
 			}
 
 			numButtons[i].setPreferredSize(new Dimension(15, 15));
 			buttonPanel.add(numButtons[i]);
 		}
-		clearButton.addActionListener(new ActionListener() {
+		clearButton.addActionListener(e -> removeSelectedAndWrite("", true));
+		enterButton.addActionListener(e -> {
+            if (parentPopup != null) {
+                parentPopup.close();
+            } else {
+                closeParentFrame();
+            }
 
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				removeSelectedAndWrite("", true);
-			}
+        });
+		minusButton.addActionListener(e -> {
+            if (!text.getText().contains("-")) {
+                removeSelectedAndWrite("-", true);
+            }
 
-		});
-		enterButton.addActionListener(new ActionListener() {
-
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				if (parentPopup != null) {
-					parentPopup.close();
-				} else {
-					closeParentFrame();
-				}
-
-			}
-
-		});
-		minusButton.addActionListener(new ActionListener() {
-
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				if (!text.getText().contains("-")) {
-					removeSelectedAndWrite("-", true);
-				}
-
-			}
-
-		});
+        });
 		buttonPanel.add(minusButton);
 		buttonPanel.add(clearButton);
 		buttonPanel.add(enterButton);
@@ -146,7 +104,7 @@ public class NumPanel extends JPanel {
 	}
 
 	public void closeParentFrame() {
-		JFrame parentFrame = (JFrame) SwingUtilities.getWindowAncestor(NumPanel.this);
+		Window parentFrame = SwingUtilities.getWindowAncestor(NumPanel.this);
 		Toolkit.getDefaultToolkit().getSystemEventQueue()
 				.postEvent(new WindowEvent(parentFrame, WindowEvent.WINDOW_CLOSING));
 

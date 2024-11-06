@@ -1,22 +1,17 @@
 package org.vibehistorian.vibecomposer.Popups;
 
-import java.awt.Color;
-import java.awt.Font;
+import org.vibehistorian.vibecomposer.LG;
+
+import javax.swing.*;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 
-import javax.swing.JFrame;
-import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
-import javax.swing.Timer;
-
-import org.vibehistorian.vibecomposer.LG;
-
 public class DebugConsole {
-	final JFrame frame = new JFrame();
+	final JDialog frame = new JDialog();
 	JTextArea textArea;
 	JScrollPane scroll;
 	long lastWrittenNs = 0;
@@ -68,7 +63,7 @@ public class DebugConsole {
 		return ps;
 	}
 
-	public JFrame getFrame() {
+	public JDialog getFrame() {
 		return frame;
 	}
 }

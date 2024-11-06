@@ -1,13 +1,10 @@
 package org.vibehistorian.vibecomposer.Panels;
 
-import java.awt.Dimension;
-
-import javax.swing.BoxLayout;
-import javax.swing.JLabel;
-import javax.swing.JLayeredPane;
-
 import org.vibehistorian.vibecomposer.Components.JKnob;
 import org.vibehistorian.vibecomposer.Components.LockComponentButton;
+
+import javax.swing.*;
+import java.awt.*;
 
 public class KnobPanel extends TransparentablePanel {
 
@@ -20,6 +17,8 @@ public class KnobPanel extends TransparentablePanel {
 	String name = "";
 	LockComponentButton lockButt = null;
 	boolean scrollEnabled = true;
+
+	private JLayeredPane knobLockPane;
 
 	public KnobPanel(String name, int value) {
 		this(name, value, 0, 100);
@@ -46,7 +45,7 @@ public class KnobPanel extends TransparentablePanel {
 		}
 		setMaximumSize(new Dimension(200, 50));
 		add(label);
-		JLayeredPane knobLockPane = new JLayeredPane();
+		knobLockPane = new JLayeredPane();
 		knobLockPane.setPreferredSize(new Dimension(40, 40));
 		knobLockPane.setOpaque(false);
 		knobLockPane.add(knob);
@@ -110,4 +109,7 @@ public class KnobPanel extends TransparentablePanel {
 		knob.setScrollEnabled(scrollEnabled);
 	}
 
+	public JLayeredPane getKnobLockPane() {
+		return knobLockPane;
+	}
 }

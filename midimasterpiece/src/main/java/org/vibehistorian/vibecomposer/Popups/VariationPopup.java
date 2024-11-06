@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
 
 public class VariationPopup {
 
-	final JFrame frame = new JFrame();
+	final JDialog frame = new JDialog();
 	JPanel tablesPanel = new JPanel();
 	JTable[] tables = new JTable[5];
 
@@ -517,7 +517,7 @@ public class VariationPopup {
 
 	}
 
-	public JFrame getFrame() {
+	public JDialog getFrame() {
 		return frame;
 	}
 }

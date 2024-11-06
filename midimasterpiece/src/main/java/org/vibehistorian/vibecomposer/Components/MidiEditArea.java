@@ -16,8 +16,6 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionListener;
-import java.awt.event.MouseWheelEvent;
-import java.awt.event.MouseWheelListener;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -29,13 +27,18 @@ import java.util.stream.Collectors;
 
 public class MidiEditArea extends JComponent {
 
-	public static enum DM {
+	public static final double[] TIME_GRID = new double[] { 0.125, 1 / 6.0, MidiGenerator.Durations.SIXTEENTH_NOTE, 1 / 3.0, MidiGenerator.Durations.EIGHTH_NOTE,
+			2 / 3.0, MidiGenerator.Durations.QUARTER_NOTE, 4 / 3.0, MidiGenerator.Durations.HALF_NOTE, MidiGenerator.Durations.WHOLE_NOTE };
+
+	public enum DM {
 		POSITION, DURATION, NOTE_START, VELOCITY, PITCH, PITCH_SHAPE, VELOCITY_SHAPE, MULTIPLE;
 	}
 
 	private static final long serialVersionUID = -2972572935738976623L;
-	public int min = -10;
-	public int max = 10;
+	public int currentMin = -10;
+	public int currentMax = 10;
+	public int rangeMin;
+	public int rangeMax;
 	PhraseNotes values = null;
 	public int part = 0;
 
@@ -57,11 +60,17 @@ public class MidiEditArea extends JComponent {
 	boolean lockTimeGrid;
 	Integer dragX;
 	Integer dragY;
-	public static double sectionLength = 16.0;
+	public double sectionLength = 16.0;
 	PhraseNote highlightedNote;
 	Integer highlightedDragLocation;
 	Integer prevHighlightedDragLocation;
 	Point mousePoint;
+
+	public boolean drawNoteStrings = true;
+	public boolean splitNotesByGrid = false;
+	public int timeGridChoice = TIME_GRID.length-1;
+	public List<Double> chordSpacingDurations;
+	public boolean forceMarginTime = false;
 
 	public static double phraseMarginX = 2.0;
 
@@ -71,49 +80,47 @@ public class MidiEditArea extends JComponent {
 
 	public MidiEditArea(int minimum, int maximum, PhraseNotes vals) {
 		super();
-		setMin(minimum);
-		setMax(maximum);
+		setCurrentMin(minimum);
+		setCurrentMax(maximum);
+		setRange(minimum, maximum);
 		values = vals;
 		resetBase();
 
-		addMouseWheelListener(new MouseWheelListener() {
-			@Override
-			public void mouseWheelMoved(MouseWheelEvent e) {
-				if (!e.isAltDown()) {
-					int rot = (e.getWheelRotation() > 0) ? -1 : 1;
-					if ((rot > 0 && max > 120) || (rot < 0 && min < 10)) {
-						return;
-					}
-					int originalTrackScopeUpDown = MidiEditPopup.trackScope;
-					MidiEditPopup.trackScopeUpDown = OMNI
-							.clamp(MidiEditPopup.trackScopeUpDown + rot, -4, 4);
-					if (originalTrackScopeUpDown != MidiEditPopup.trackScopeUpDown) {
-						min += MidiEditPopup.baseMargin * rot;
-						max += MidiEditPopup.baseMargin * rot;
-						setAndRepaint();
-					}
-				} else {
-					int rot = (e.getWheelRotation() > 0) ? 1 : -1;
-					int originalTrackScope = MidiEditPopup.trackScope;
-					if (rot > 0 && (max > 120 || min < 10)) {
-						return;
-					}
-					MidiEditPopup.trackScope = originalTrackScope + rot;
-					if (rot < 0 && ((max - min) <= MidiEditPopup.baseMargin * 4)) {
-						MidiEditPopup.trackScope++;
-					}
-					if (originalTrackScope != MidiEditPopup.trackScope) {
-						if (!(rot > 0 && max > 120)) {
-							max += MidiEditPopup.baseMargin * rot;
-						}
-						if (!(rot > 0 && min < 10)) {
-							min -= MidiEditPopup.baseMargin * rot;
-						}
-						setAndRepaint();
-					}
-				}
-			}
-		});
+		addMouseWheelListener(e -> {
+            if (!e.isAltDown()) {
+                int rot = (e.getWheelRotation() > 0) ? -1 : 1;
+                if ((rot > 0 && currentMax > rangeMax -7) || (rot < 0 && currentMin < rangeMin +10)) {
+                    return;
+                }
+                int originalTrackScopeUpDown = MidiEditPopup.trackScope;
+                MidiEditPopup.trackScopeUpDown = OMNI
+                        .clamp(MidiEditPopup.trackScopeUpDown + rot, -4, 4);
+                if (originalTrackScopeUpDown != MidiEditPopup.trackScopeUpDown) {
+                    currentMin += MidiEditPopup.baseMargin * rot;
+                    currentMax += MidiEditPopup.baseMargin * rot;
+                    setAndRepaint();
+                }
+            } else {
+                int rot = (e.getWheelRotation() > 0) ? 1 : -1;
+                int originalTrackScope = MidiEditPopup.trackScope;
+                if (rot > 0 && (currentMax > rangeMax -7 || currentMin < rangeMin +10)) {
+                    return;
+                }
+                MidiEditPopup.trackScope = originalTrackScope + rot;
+                if (rot < 0 && ((currentMax - currentMin) <= MidiEditPopup.baseMargin * 4)) {
+                    MidiEditPopup.trackScope++;
+                }
+                if (originalTrackScope != MidiEditPopup.trackScope) {
+                    if (!(rot > 0 && currentMax > rangeMax -7)) {
+                        currentMax += MidiEditPopup.baseMargin * rot;
+                    }
+                    if (!(rot > 0 && currentMin < rangeMin +10)) {
+                        currentMin -= MidiEditPopup.baseMargin * rot;
+                    }
+                    setAndRepaint();
+                }
+            }
+        });
 
 		addMouseListener(new MouseAdapter() {
 			@Override
@@ -219,6 +226,10 @@ public class MidiEditArea extends JComponent {
 		});
 	}
 
+	public double getTimeGrid() {
+		return TIME_GRID[pop != null ? MidiEditPopup.snapToTimeGridChoice : timeGridChoice];
+	}
+
 
 	private void handleMiddlePress(MouseEvent evt) {
 		if (!isEnabled()) {
@@ -231,7 +242,7 @@ public class MidiEditArea extends JComponent {
 		} else if (evt.isControlDown()) {
 			if (orderVal != null && values.get(orderVal.x).getPitch() >= 0) {
 				PhraseNote note = values.get(orderVal.x);
-				int velocity = OMNI.clampVel((127 * (orderVal.y - min) / (double) (max - min)));
+				int velocity = OMNI.clampVel((127 * (orderVal.y - currentMin) / (double) (currentMax - currentMin)));
 				if (velocity != note.getDynamic()) {
 					note.setDynamic(velocity);
 					playNote(note);
@@ -247,7 +258,7 @@ public class MidiEditArea extends JComponent {
 
 			dragMode.add(DM.VELOCITY);
 		} else if (pop != null && pop.displayDrumHelper.isSelected() && pop.getSec() != null) {
-			int row = getPitchFromPosition(evt.getPoint().y) - min;
+			int row = getPitchFromPosition(evt.getPoint().y) - currentMin;
 			List<PhraseNotes> noteNotes = pop.getSec().getPatterns(4);
 			if (row >= 0 && row < noteNotes.size()) {
 				pop.setupIdentifiers(4, VibeComposerGUI.getInstList(4).get(row).getPanelOrder());
@@ -281,6 +292,9 @@ public class MidiEditArea extends JComponent {
 	private void splitNotes(int noteIndex, Point point) {
 		values.remakeNoteStartTimes();
 		double time = getTimeFromPosition(point);
+		if (splitNotesByGrid) {
+			time = getClosestToTimeGrid(time);
+		}
 		PhraseNote splitNote = values.get(noteIndex);
 		List<PhraseNote> notesToSplit = selectedNotes.contains(splitNote) ? selectedNotes
 				: Collections.singletonList(splitNote);
@@ -333,7 +347,7 @@ public class MidiEditArea extends JComponent {
 		} else {
 			if (draggedNote == null) {
 				Point orderVal = getOrderAndValueFromPosition(evt.getPoint(), false, true);
-				if (orderVal != null) {
+				if (orderVal != null && !values.isEmpty()) {
 					/*if (pn.getPitch() == Note.REST && pn.getRv() > MidiGenerator.DBL_ERR) {
 					
 						LG.d("UnRESTing existing original note..");
@@ -573,7 +587,7 @@ public class MidiEditArea extends JComponent {
 					if (orderVal != null && values.get(orderVal.x).getPitch() >= 0) {
 						PhraseNote note = values.get(orderVal.x);
 						int velocity = OMNI
-								.clampVel((127 * (orderVal.y - min) / (double) (max - min)));
+								.clampVel((127 * (orderVal.y - currentMin) / (double) (currentMax - currentMin)));
 						if (velocity != note.getDynamic()) {
 							note.setDynamic(velocity);
 							playNote(note);
@@ -591,6 +605,9 @@ public class MidiEditArea extends JComponent {
 					if (lockTimeGrid) {
 						offset = getClosestToTimeGrid(offset + draggedNote.getAbsoluteStartTime())
 								- draggedNote.getAbsoluteStartTime();
+					}
+					if (forceMarginTime) {
+						offset = OMNI.clamp(offset, -draggedNote.getAbsoluteStartTime(), sectionLength - draggedNote.getAbsoluteStartTime() - draggedNote.getDuration());
 					}
 					if (draggingAny(DM.MULTIPLE)) {
 						double offsetChange = offset - draggedNoteCopy.getOffset();
@@ -632,6 +649,9 @@ public class MidiEditArea extends JComponent {
 					if (lockTimeGrid) {
 						offset = getClosestToTimeGrid(offset + draggedNote.getAbsoluteStartTime())
 								- draggedNote.getAbsoluteStartTime();
+					}
+					if (forceMarginTime) {
+						offset = OMNI.clamp(offset, -draggedNote.getAbsoluteStartTime(), sectionLength - draggedNote.getAbsoluteStartTime() - draggedNote.getDuration());
 					}
 					double duration = draggedNoteCopy.getDuration() + draggedNoteCopy.getOffset()
 							- offset;
@@ -707,7 +727,7 @@ public class MidiEditArea extends JComponent {
 	}
 
 	private double timeGridValue(double val) {
-		double timeGrid = MidiEditPopup.getTimeGrid();
+		double timeGrid = getTimeGrid();
 		double newVal = Math.round(val / timeGrid) * timeGrid;
 		return newVal;
 	}
@@ -715,7 +735,7 @@ public class MidiEditArea extends JComponent {
 	private double getClosestToTimeGrid(double val) {
 		//LG.i("Time val: " + val);
 		List<Double> timeGridLocations = new ArrayList<>();
-		double timeGrid = MidiEditPopup.getTimeGrid();
+		double timeGrid = getTimeGrid();
 		double currentTime = -1 * getPhraseMarginX();
 		while (currentTime < (sectionLength + getPhraseMarginX())) {
 			timeGridLocations.add(currentTime);
@@ -761,7 +781,7 @@ public class MidiEditArea extends JComponent {
 			int w = getWidth();
 			int h = getHeight();
 			int numValues = values.size();
-			int rowDivisors = max - min;
+			int rowDivisors = currentMax - currentMin;
 			int usableHeight = h - marginY * 2;
 			double rowHeight = usableHeight / (double) rowDivisors;
 			// clear screen
@@ -801,10 +821,10 @@ public class MidiEditArea extends JComponent {
 
 			int drawEveryX = Math.max((int) Math.ceil((numHeight + 4) / rowHeight), 1);
 
-			for (int i = 0; i < 1 + (max - min); i++) {
-				int drawnInt = min + i;
-				String drawnValue = "" + (drawnInt) + " | "
-						+ MidiUtils.pitchOrDrumToString(drawnInt, partNum, true);
+			for (int i = 0; i < 1 + (currentMax - currentMin); i++) {
+				int drawnInt = currentMin + i;
+				String drawnValue = "" + (drawnInt) + (!drawNoteStrings ? "" : (" | "
+						+ MidiUtils.pitchOrDrumToString(drawnInt, partNum, true)));
 				int valueLength = drawnValue.startsWith("-") ? drawnValue.length() + 1
 						: drawnValue.length();
 				int drawValueX = bottomLeft.x / 2 - (numWidth * valueLength) / 2;
@@ -838,7 +858,7 @@ public class MidiEditArea extends JComponent {
 
 
 			List<Double> timeGridLocations = new ArrayList<>();
-			double timeGrid = MidiEditPopup.getTimeGrid();
+			double timeGrid = getTimeGrid();
 			double currentTime = -1 * getPhraseMarginX();
 			while (currentTime < (sectionLength + getPhraseMarginX())) {
 				timeGridLocations.add(currentTime);
@@ -900,7 +920,7 @@ public class MidiEditArea extends JComponent {
 					g.drawLine(drawX, drawDotY - 2, drawX, drawDotY + 2);
 				}*/
 				g.drawLine(drawX, bottomLeft.y, drawX,
-						bottomLeft.y - (int) rowHeight * (max - min + 2));
+						bottomLeft.y - (int) rowHeight * (currentMax - currentMin + 2));
 
 				prev = curr;
 
@@ -908,11 +928,11 @@ public class MidiEditArea extends JComponent {
 
 
 			// draw chord spacing
-			if ((pop != null) && (pop.getSec() != null)
-					&& (pop.getSec().getGeneratedDurations() != null)) {
-				List<Double> chordSpacings = new ArrayList<>(pop.getSec().getGeneratedDurations());
+			List<Double> chordSpacings = getChordSpacingDurations();
+			if (chordSpacings != null) {
+				int numMeasures = (pop == null ? 1 : pop.getSec().getMeasures());
 				double spacingSum = chordSpacings.stream().mapToDouble(e -> e).sum()
-						* pop.getSec().getMeasures();
+						* numMeasures;
 				if (sectionLength > MidiGenerator.DBL_ERR && spacingSum > MidiGenerator.DBL_ERR
 						&& !MidiUtils.roughlyEqual(spacingSum, sectionLength)) {
 					for (int i = 0; i < chordSpacings.size(); i++) {
@@ -920,7 +940,7 @@ public class MidiEditArea extends JComponent {
 					}
 				}
 				List<Double> chordSpacingsTemp = new ArrayList<>(chordSpacings);
-				for (int i = 1; i < pop.getSec().getMeasures(); i++) {
+				for (int i = 1; i < numMeasures; i++) {
 					chordSpacings.addAll(chordSpacingsTemp);
 				}
 
@@ -942,8 +962,8 @@ public class MidiEditArea extends JComponent {
 							// horizontal helper lines
 							int drawXEnd = drawX + (int) (quarterNoteLength * chordSpacings.get(i));
 							g.setColor(highlightedChordNoteColor);
-							for (int j = 0; j < 1 + (max - min); j++) {
-								int noteTest = (min + j + 1200) % 12;
+							for (int j = 0; j < 1 + (currentMax - currentMin); j++) {
+								int noteTest = (currentMin + j + 1200) % 12;
 								if (chordNotes.contains(noteTest)) {
 									g.setColor(highlightedChordNoteColor);
 									int drawY = bottomLeft.y - (int) (rowHeight * (j + 1));
@@ -979,7 +999,7 @@ public class MidiEditArea extends JComponent {
 				int pitchForText = pitch;
 				int drawX = bottomLeft.x
 						+ (int) (quarterNoteLength * (pn.getStartTime() + getPhraseMarginX()));
-				int drawY = bottomLeft.y - (int) (rowHeight * (pitch + 1 - min));
+				int drawY = bottomLeft.y - (int) (rowHeight * (pitch + 1 - currentMin));
 				int width = (int) (quarterNoteLength * pn.getDuration());
 
 				// draw straight line connecting values
@@ -990,7 +1010,7 @@ public class MidiEditArea extends JComponent {
 						g.setColor(OMNI.alphen(VibeComposerGUI.uiColor(), 50));
 						int drawXNext = bottomLeft.x
 								+ (int) (quarterNoteLength * (nextPn.getStartTime() + getPhraseMarginX()));
-						int drawYNext = bottomLeft.y - (int) (rowHeight * (nextPn.getPitch() + 1 - min));
+						int drawYNext = bottomLeft.y - (int) (rowHeight * (nextPn.getPitch() + 1 - currentMin));
 						g.drawLine(drawX, drawY, drawXNext, drawYNext);
 					}
 				}
@@ -1116,6 +1136,16 @@ public class MidiEditArea extends JComponent {
 		}
 	}
 
+	private List<Double> getChordSpacingDurations() {
+		if ((pop != null) && (pop.getSec() != null)
+				&& (pop.getSec().getGeneratedDurations() != null)) {
+			return new ArrayList<>(pop.getSec().getGeneratedDurations());
+		} else {
+			chordSpacingDurations = VibeComposerGUI.getUserChordDurations();
+			return chordSpacingDurations;
+		}
+	}
+
 	private Rectangle getRectFromPoint(Point p) {
 		return new Rectangle(Math.min(p.x, dragX), Math.min(p.y, dragY), Math.abs(p.x - dragX),
 				Math.abs(p.y - dragY));
@@ -1210,14 +1240,14 @@ public class MidiEditArea extends JComponent {
 	}
 
 	private int getPitchFromPosition(int y) {
-		int rowDivisors = max - min;
+		int rowDivisors = currentMax - currentMin;
 		int usableHeight = getHeight() - marginY * 2;
 		double rowHeight = usableHeight / (double) rowDivisors;
 
 		Point bottomLeftAdjusted = new Point(marginX,
 				usableHeight + marginY - (int) (rowHeight / 2));
 
-		int yValue = (int) ((bottomLeftAdjusted.y - y) / rowHeight) + min;
+		int yValue = (int) ((bottomLeftAdjusted.y - y) / rowHeight) + currentMin;
 		return yValue;
 
 	}
@@ -1283,7 +1313,7 @@ public class MidiEditArea extends JComponent {
 			boolean getClosestOriginal) {
 		int w = getWidth();
 		int h = getHeight();
-		int rowDivisors = max - min;
+		int rowDivisors = currentMax - currentMin;
 		int usableHeight = h - marginY * 2;
 		double rowHeight = usableHeight / (double) rowDivisors;
 
@@ -1293,7 +1323,7 @@ public class MidiEditArea extends JComponent {
 		values.remakeNoteStartTimes();
 		double quarterNoteLength = getQuarterNoteLength();
 
-		int yValue = (int) ((bottomLeftAdjusted.y - xy.y) / rowHeight) + min;
+		int yValue = (int) ((bottomLeftAdjusted.y - xy.y) / rowHeight) + currentMin;
 
 		double searchTime = ((xy.x - bottomLeftAdjusted.x) / quarterNoteLength)
 				- getPhraseMarginX();
@@ -1341,7 +1371,7 @@ public class MidiEditArea extends JComponent {
 		int xValue = foundX;
 
 		xValue = OMNI.clamp(xValue, 0, values.size() - 1);
-		yValue = OMNI.clamp(yValue, min, max);
+		yValue = OMNI.clamp(yValue, currentMin, currentMax);
 
 		Point orderValue = new Point(xValue, yValue);
 		//LG.d("Incoming point: " + xy.toString());
@@ -1358,13 +1388,17 @@ public class MidiEditArea extends JComponent {
 		this.pop = pop;
 	}
 
-	public void setMin(int min) {
-		this.min = min;
+	public void setCurrentMin(int currentMin) {
+		this.currentMin = currentMin;
 	}
 
-	public void setMax(int max) {
-		this.max = max;
+	public void setCurrentMax(int currentMax) {
+		this.currentMax = currentMax;
 	}
 
+	public void setRange(int min, int max) {
+		rangeMin = min;
+		rangeMax = max;
+	}
 
 }

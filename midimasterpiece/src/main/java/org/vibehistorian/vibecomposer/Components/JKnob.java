@@ -16,8 +16,6 @@ import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
-import java.awt.event.MouseWheelEvent;
-import java.awt.event.MouseWheelListener;
 import java.awt.font.FontRenderContext;
 import java.awt.font.GlyphVector;
 import java.awt.geom.AffineTransform;
@@ -99,7 +97,7 @@ public class JKnob extends JComponent
 	 * Constructor that initializes the position
 	 * of the knob to the specified angle in radians.
 	 *
-	 * @param initAngle the initial angle of the knob.
+	 * @param initTheta the initial angle of the knob.
 	 */
 	public JKnob(double initTheta) {
 		this(initTheta, Color.gray, Color.black);
@@ -133,8 +131,8 @@ public class JKnob extends JComponent
 	 * knob to the specified position and also allows the
 	 * colors of the knob and spot to be specified.
 	 *
-	 * @param initAngle     the initial angle of the knob.
-	 * @param initColor     the color of the knob.
+	 * @param initTheta     the initial angle of the knob.
+	 * @param initKnobColor     the color of the knob.
 	 * @param initSpotColor the color of the spot.
 	 */
 	public JKnob(double initTheta, Color initKnobColor, Color initSpotColor) {
@@ -147,39 +145,35 @@ public class JKnob extends JComponent
 		setSize(2 * radius, 2 * radius);
 		this.addMouseListener(this);
 		this.addMouseMotionListener(this);
-		addMouseWheelListener(new MouseWheelListener() {
+		addMouseWheelListener(e -> {
+            if (!scrollEnabled && !e.isControlDown()) {
+                Container cont = JKnob.this.getParent();
+                cont.dispatchEvent(SwingUtilities.convertMouseEvent(e.getComponent(), e, cont));
+                return;
+            }
 
-			@Override
-			public void mouseWheelMoved(MouseWheelEvent e) {
-				if (!scrollEnabled && !e.isControlDown()) {
-					Container cont = JKnob.this.getParent();
-					cont.dispatchEvent(SwingUtilities.convertMouseEvent(e.getComponent(), e, cont));
-					return;
-				}
+            int val = 0;
+            if (tickSpacing > 0) {
+                int index = tickThresholds.indexOf(curr);
+                if (index < 0) {
+                    int closest = MidiUtils.getClosestFromList(tickThresholds, curr);
+                    index = tickThresholds.indexOf(closest);
+                }
+                val = tickThresholds.get(
+                        OMNI.clamp(index - e.getWheelRotation(), 0, tickThresholds.size() - 1));
+            } else {
+                int scrollAmount = e.isShiftDown() ? 1 : Math.max(1, (max - min) / 20);
+                val = OMNI.clamp(curr - e.getWheelRotation() * scrollAmount, min, max);
+            }
 
-				int val = 0;
-				if (tickSpacing > 0) {
-					int index = tickThresholds.indexOf(curr);
-					if (index < 0) {
-						int closest = MidiUtils.getClosestFromList(tickThresholds, curr);
-						index = tickThresholds.indexOf(closest);
-					}
-					val = tickThresholds.get(
-							OMNI.clamp(index - e.getWheelRotation(), 0, tickThresholds.size() - 1));
-				} else {
-					int scrollAmount = e.isShiftDown() ? 1 : Math.max(1, (max - min) / 20);
-					val = OMNI.clamp(curr - e.getWheelRotation() * scrollAmount, min, max);
-				}
+            if (e.isControlDown()) {
+                setValueGlobal(val);
+            } else {
+                setValue(val);
+            }
 
-				if (e.isControlDown()) {
-					setValueGlobal(val);
-				} else {
-					setValue(val);
-				}
-
-				repaint();
-			}
-		});
+            repaint();
+        });
 	}
 
 
@@ -491,12 +485,13 @@ public class JKnob extends JComponent
 		if (SwingUtilities.isLeftMouseButton(e)) {
 			Point mouseLoc = e.getPoint();
 			pressedOnSpot = isOnCenter(mouseLoc);
-
-			fine = VibeComposerGUI.knobControlByDragging.isSelected() || e.isShiftDown();
-			fineStart = curr;
-			startPoint = new Point(SwingUtils.getMouseLocation());
-			SwingUtilities.convertPointFromScreen(startPoint, JKnob.this);
-			recalc(e);
+			if (pressedOnSpot) {
+				fine = VibeComposerGUI.knobControlByDragging.isSelected() || e.isShiftDown();
+				fineStart = curr;
+				startPoint = new Point(SwingUtils.getMouseLocation());
+				SwingUtilities.convertPointFromScreen(startPoint, JKnob.this);
+				recalc(e);
+			}
 		} else if (SwingUtilities.isRightMouseButton(e)) {
 			fineStart = curr;
 			if (ctrlClick) {

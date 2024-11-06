@@ -40,6 +40,7 @@ public class PatternManagerPopup extends CloseablePopup {
 		mveaPanel.setPreferredSize(new Dimension(panelWidth, 350));
 		mveaPanel.setMinimumSize(new Dimension(panelWidth, 350));
 		mvea = new MidiEditArea(126, 1, new PhraseNotes());
+		mvea.setRange(126, 1);
 		mvea.setPop(null);
 		mvea.setPreferredSize(new Dimension(panelWidth, 350));
 		mvea.setEnabled(false);
@@ -131,8 +132,8 @@ public class PatternManagerPopup extends CloseablePopup {
 				vmax += notes.getMax();
 			}
 		}
-		mvea.setMin(Math.min(mvea.min, vmin));
-		mvea.setMax(Math.max(mvea.max, vmax));
+		mvea.setCurrentMin(Math.min(mvea.currentMin, vmin));
+		mvea.setCurrentMax(Math.max(mvea.currentMax, vmax));
 
 
 		mvea.part = OMNI.clamp(patternPartBox.getSelectedIndex(), 0, 4);
@@ -145,7 +146,7 @@ public class PatternManagerPopup extends CloseablePopup {
 
 	public void repaintMvea() {
 		mvea.setAndRepaint();
-		MidiEditArea.sectionLength = mvea.getValues().stream().map(e -> e.getRv())
+		mvea.sectionLength = mvea.getValues().stream().map(e -> e.getRv())
 				.mapToDouble(e -> e).sum();
 	}
 

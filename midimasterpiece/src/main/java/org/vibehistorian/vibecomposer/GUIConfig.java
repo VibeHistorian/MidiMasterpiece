@@ -119,6 +119,7 @@ public class GUIConfig {
 	private int melodyRhythmAccents = 0;
 	private int melodyRhythmAccentsMode = 0;
 	private boolean melodyRhythmAccentsPocket = false;
+	private boolean melodyUseCustomDurations = false;
 
 	// chord gen
 	private int chordSlashChance = 0;
@@ -989,5 +990,13 @@ public class GUIConfig {
 
 	public void setNoteTargetDirectionChoice(MelodyUtils.NoteTargetDirection noteTargetDirectionChoice) {
 		this.noteTargetDirectionChoice = noteTargetDirectionChoice;
+	}
+
+	public boolean isMelodyUseCustomDurations() {
+		return melodyUseCustomDurations;
+	}
+
+	public void setMelodyUseCustomDurations(boolean melodyUseCustomDurations) {
+		this.melodyUseCustomDurations = melodyUseCustomDurations;
 	}
 }

@@ -205,7 +205,7 @@ public class SwingUtils {
 		return MouseInfo.getPointerInfo().getLocation();
 	}
 
-	public static void setFrameLocation(JFrame frame, Point loc) {
+	public static void setFrameLocation(JDialog frame, Point loc) {
 		loc.x = Math.max(VibeComposerGUI.vibeComposerGUI.getLocation().x + 50, loc.x);
 		loc.y = Math.max(VibeComposerGUI.vibeComposerGUI.getLocation().y + 50, loc.y);
 		if (loc.x < 0) {

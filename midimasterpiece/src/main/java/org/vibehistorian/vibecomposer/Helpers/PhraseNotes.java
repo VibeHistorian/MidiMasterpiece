@@ -3,12 +3,14 @@ package org.vibehistorian.vibecomposer.Helpers;
 import jm.music.data.Note;
 import jm.music.data.Phrase;
 import org.apache.commons.lang3.StringUtils;
+import org.vibehistorian.vibecomposer.MidiGenerator;
 
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
 import javax.xml.bind.annotation.XmlType;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -22,6 +24,7 @@ public class PhraseNotes extends ArrayList<PhraseNote> implements Cloneable {
 	private int partOrder = -1;
 	private boolean applied = false;
 	private List<PhraseNote> iterationOrder = null;
+	private double totalDuration = 0.0;
 
 	public PhraseNotes() {
 		super();
@@ -34,6 +37,21 @@ public class PhraseNotes extends ArrayList<PhraseNote> implements Cloneable {
 	public PhraseNotes(List<Note> notes) {
 		this();
 		addAll(notes.stream().map(e -> new PhraseNote(e)).collect(Collectors.toList()));
+	}
+
+	public static PhraseNotes fromPN(List<PhraseNote> notes) {
+		if (notes == null) {
+			 return null;
+		}
+		PhraseNotes pn = new PhraseNotes();
+		pn.addAll(notes);
+		return pn;
+	}
+
+	public static List<Note> blankNoteList() {
+		Note blankNote = new Note(0, 0);
+		blankNote.setDuration(MidiGenerator.Durations.WHOLE_NOTE);
+		return new ArrayList<>(Collections.singletonList(blankNote));
 	}
 
 	public List<Note> makeNotes() {
@@ -71,17 +89,28 @@ public class PhraseNotes extends ArrayList<PhraseNote> implements Cloneable {
 		this.partOrder = partOrder;
 	}
 
+	public double getTotalDuration() {
+		return totalDuration;
+	}
+
+	public void setTotalDuration(double totalDuration) {
+		this.totalDuration = totalDuration;
+	}
+
 	public void remakeNoteStartTimes() {
 		remakeNoteStartTimes(false);
 	}
 
 	public void remakeNoteStartTimes(boolean manipulateOrder) {
-		double current = 0.0;
+		double cumulativeTotal = 0.0;
 		for (PhraseNote pn : this) {
-			pn.setStartTime(current + pn.getOffset());
-			pn.setAbsoluteStartTime(current);
-			current += pn.getRv();
+			pn.setStartTime(cumulativeTotal + pn.getOffset());
+			pn.setAbsoluteStartTime(cumulativeTotal);
+			cumulativeTotal += pn.getRv();
 		}
+
+		totalDuration = cumulativeTotal;
+
 		if (manipulateOrder) {
 			iterationOrder = new ArrayList<>(this);
 			iterationOrder.sort(Comparator.comparingDouble(PhraseNote::getStartTime));

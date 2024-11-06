@@ -138,7 +138,7 @@ public class MelodyUtils {
 		List<Pair<Integer, Integer[]>> viableBlocks = new ArrayList<>();
 		int start = Math.max(blockChange - approx, -7);
 		int end = Math.min(blockChange + approx, 7);
-		int[] viableBlockTypeCounts = new int[5];
+		int[] viableBlockTypeCounts = new int[BlockType.values().length];
 		Arrays.fill(viableBlockTypeCounts, 0);
 
 		for (int i = start; i <= end; i++) {
@@ -204,7 +204,7 @@ public class MelodyUtils {
 			viableBlocks.sort(Comparator.comparingInt(e -> usedMelodyBlockJumpPreference.indexOf(Math.abs(blockChange(e.getRight())))));
 		}
 		if (!melodyBlockTypePreference.isEmpty() && melodyBlockTypePreference.stream().anyMatch(e -> e > 0)) {
-			int[] adjustedCounts = new int[5];
+			int[] adjustedCounts = new int[BlockType.values().length];
 			int totalMatching = 0;
 			for (int i = 0; i < 5; i++) {
 				// if weight > 0, keep at least one
@@ -324,7 +324,7 @@ public class MelodyUtils {
 			int newValue = changeList.get(redIndex) + increment;
 			changeList.set(redIndex, newValue);
 			if (Math.abs(newValue) == maxBlockChange) {
-				Integer removed = reducableIndices.remove(redI);
+				reducableIndices.remove(redI);
 			}
 		}
 		rand.setSeed(randSeed);

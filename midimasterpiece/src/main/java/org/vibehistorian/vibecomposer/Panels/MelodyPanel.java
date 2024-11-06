@@ -1,10 +1,13 @@
 package org.vibehistorian.vibecomposer.Panels;
 
 import org.apache.commons.lang3.StringUtils;
+import org.vibehistorian.vibecomposer.Components.BigPickerOpener;
 import org.vibehistorian.vibecomposer.Components.CustomCheckBox;
 import org.vibehistorian.vibecomposer.Components.RandomIntegerListButton;
 import org.vibehistorian.vibecomposer.Components.ScrollComboBox;
+import org.vibehistorian.vibecomposer.Helpers.PhraseNotes;
 import org.vibehistorian.vibecomposer.InstUtils.POOL;
+import org.vibehistorian.vibecomposer.LG;
 import org.vibehistorian.vibecomposer.MelodyUtils;
 import org.vibehistorian.vibecomposer.MidiGenerator;
 import org.vibehistorian.vibecomposer.MidiGeneratorUtils;
@@ -13,11 +16,14 @@ import org.vibehistorian.vibecomposer.OMNI;
 import org.vibehistorian.vibecomposer.Panels.SoloMuter.State;
 import org.vibehistorian.vibecomposer.Parts.InstPart;
 import org.vibehistorian.vibecomposer.Parts.MelodyPart;
+import org.vibehistorian.vibecomposer.Popups.CustomDurationsEditPopup;
 import org.vibehistorian.vibecomposer.VibeComposerGUI;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -41,6 +47,8 @@ public class MelodyPanel extends InstPanel {
 	private KnobPanel startNoteChance = new KnobPanel("Start%", 80);
 	private JCheckBox patternFlexible = new CustomCheckBox("Flex", true);
 
+	private PhraseNotes customDurationValues = new PhraseNotes(PhraseNotes.blankNoteList());
+
 	public void initComponents(ActionListener l) {
 
 		ScrollComboBox.addAll(new Integer[] { 1, 2, 3, 4, 5, 6, 7, 8, 11, 12, 13, 14, 15 },
@@ -61,6 +69,18 @@ public class MelodyPanel extends InstPanel {
 		this.add(panelOrder);
 		addDefaultInstrumentControls();
 		addDefaultPanelButtons();
+
+		BigPickerOpener bpo = new BigPickerOpener();
+		bpo.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mousePressed(MouseEvent evt) {
+				LG.i(customDurationValues);
+				new CustomDurationsEditPopup(customDurationValues, MelodyPanel.this);
+			}
+		});
+		speed.getKnobLockPane().add(bpo);
+		bpo.setBounds(0, 0, 8, 8);
+		speed.getKnobLockPane().setComponentZOrder(bpo, Integer.valueOf(0));
 
 		transpose.getKnob().setTickSpacing(10);
 		Integer[] allowedMelodyTransposes = new Integer[] { 0, 4, 5, 7 };
@@ -206,6 +226,8 @@ public class MelodyPanel extends InstPanel {
 		part.setSplitChance(getSplitChance());
 		part.setPatternFlexible(getPatternFlexible());
 
+		part.setCustomDurationNotes(getCustomDurationNotes());
+
 		return part;
 	}
 
@@ -228,6 +250,8 @@ public class MelodyPanel extends InstPanel {
 		setSpeed(part.getSpeed());
 		setSplitChance(part.getSplitChance());
 		setPatternFlexible(part.isPatternFlexible());
+
+		setCustomDurationNotes(part.getCustomDurationNotes());
 	}
 
 	@Override
@@ -380,5 +404,14 @@ public class MelodyPanel extends InstPanel {
 	public void setPatternFlexible(boolean val) {
 		this.patternFlexible.setSelected(val);
 	}
+
+	public PhraseNotes getCustomDurationNotes() {
+		return PhraseNotes.fromPN(customDurationValues);
+	}
+
+	private void setCustomDurationNotes(PhraseNotes customDurationNotes) {
+		this.customDurationValues = PhraseNotes.fromPN(customDurationNotes);
+	}
+
 }
 
