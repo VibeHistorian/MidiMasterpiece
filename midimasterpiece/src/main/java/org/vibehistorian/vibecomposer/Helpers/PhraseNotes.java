@@ -44,8 +44,8 @@ public class PhraseNotes extends ArrayList<PhraseNote> implements Cloneable {
 			 return null;
 		}
 		PhraseNotes pn = new PhraseNotes();
-		pn.addAll(notes);
-		return pn;
+		pn.addAll(notes.stream().map(e -> e.clone()).collect(Collectors.toList()));
+		return pn.copy();
 	}
 
 	public static List<Note> blankNoteList() {
@@ -152,4 +152,14 @@ public class PhraseNotes extends ArrayList<PhraseNote> implements Cloneable {
 	}
 
 
+	public void stretch(double beatDurationMult, boolean remakeOrder) {
+		stream().forEach(e -> {
+			e.setRv(e.getRv() * beatDurationMult);
+			e.setDuration(e.getDuration() * beatDurationMult);
+			e.setOffset(e.getOffset() * beatDurationMult);
+		});
+		if (remakeOrder) {
+			remakeNoteStartTimes(true);
+		}
+	}
 }

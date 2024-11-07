@@ -114,9 +114,10 @@ public class MelodyUtils {
 		final int clampedBlockChange = OMNI.clamp(blockChange, -7, 7);
 		List<Integer[]> usedList = getBlocksForType(type);
 		// length fits, note distance and distance roughly equal (diff < approx)
+		// exception is block of length 1 - no blockchange possible there, accept as-is
 		List<Integer[]> filteredList = usedList.stream()
 				.filter(e -> (length == null || e.length == length)
-						&& (Math.abs(blockChange(e) - Math.abs(clampedBlockChange)) <= approx))
+						&& (length == 1 || (Math.abs(blockChange(e) - Math.abs(clampedBlockChange)) <= approx)))
 				.collect(Collectors.toList());
 		if (filteredList.size() == 0) {
 			return null;

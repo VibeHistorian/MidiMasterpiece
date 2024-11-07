@@ -414,14 +414,15 @@ public class ShowAreaBig extends JComponent {
 		int minX = -1;
 
 		double highlightX = (VibeComposerGUI.slider != null
-				&& VibeComposerGUI.sliderMeasureStartTimes != null) ? maxX
-						* (VibeComposerGUI.slider.getUpperValue())
+				&& VibeComposerGUI.sliderMeasureStartTimes != null
+				&& !VibeComposerGUI.sliderMeasureStartTimes.isEmpty())
+				? maxX * (VibeComposerGUI.slider.getUpperValue())
 						/ (double) ((VibeComposerGUI.sliderExtended > 0
 								? VibeComposerGUI.sliderExtended
 								: 0)
 								+ VibeComposerGUI.sliderMeasureStartTimes
 										.get(VibeComposerGUI.sliderMeasureStartTimes.size() - 1))
-						: -1;
+				: -1;
 
 		Set<Integer> soloMuterHighlightedTracks = getSoloMuterHighlightedTracks();
 

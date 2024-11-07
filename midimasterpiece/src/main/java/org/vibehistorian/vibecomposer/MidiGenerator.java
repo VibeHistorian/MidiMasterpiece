@@ -911,23 +911,37 @@ public class MidiGenerator implements JMC {
 			Integer value = OMNI.getWeightedValue(IntStream.range(0, customDurationNotesMap.size()).boxed().toArray(Integer[]::new),
 					customDurationsGenerator.nextInt(100), weights);
 			PhraseNotes userCustomDurations = customDurationNotesMap.get(value);
+			double mult = getBeatDurationMult();
+			if (!MidiUtils.roughlyEqual(mult, 1.0)) {
+				userCustomDurations.stretch(mult, false);
+			}
 			userCustomDurations.remakeNoteStartTimes(true);
+
+			double currentChordDur = progressionDurations.get(chordIndex);
+
+
 			double startTime = userCustomDurations.getIterationOrder().get(0).getStartTime();
 			if (startTime > DBL_ERR) {
 				userCustomDurations.add(0, new PhraseNote(value, 0, 0.0, startTime, 0.0));
 			}
 			PhraseNote lastNote = userCustomDurations.getIterationOrder().get(userCustomDurations.size()-1);
-			if (lastNote.getEndTime() + DBL_ERR < progressionDurations.get(chordIndex)) {
+			if (lastNote.getEndTime() + DBL_ERR < currentChordDur) {
 				userCustomDurations.add(userCustomDurations.indexOf(lastNote) + 1, new PhraseNote(value, 0, 0.0,
-						progressionDurations.get(chordIndex) - lastNote.getEndTime(),
+						currentChordDur - lastNote.getEndTime(),
 						lastNote.getOffset() + lastNote.getDuration()));
+				userCustomDurations.remakeNoteStartTimes(true);
 			}
 			// cleanup notes going out of bounds
 			for (int i = userCustomDurations.size()-1; i >= 0; i--) {
 				PhraseNote currentPn = userCustomDurations.get(i);
-				if (currentPn.getEndTime() - DBL_ERR > progressionDurations.get(chordIndex)) {
-					currentPn.setDuration(currentPn.getDuration() - (currentPn.getEndTime() - progressionDurations.get(chordIndex)));
+				if (currentPn.getStartTime() + DBL_ERR > currentChordDur) {
+					userCustomDurations.remove(currentPn);
+					continue;
 				}
+				if (currentPn.getEndTime() - DBL_ERR > currentChordDur) {
+					currentPn.setDuration(currentPn.getDuration() - (currentPn.getEndTime() - currentChordDur));
+				}
+				userCustomDurations.remakeNoteStartTimes(true);
 			}
 
 			// cleanup notes overlapping each other
@@ -937,9 +951,11 @@ public class MidiGenerator implements JMC {
 				if (earlierPn.getEndTime() - DBL_ERR > currentPn.getStartTime()) {
 					earlierPn.setDuration(earlierPn.getDuration() - earlierPn.getEndTime() + currentPn.getStartTime());
 				}
+				userCustomDurations.remakeNoteStartTimes(true);
 			}
 
-			double target = progressionDurations.get(chordIndex);
+			// insert pauses between note gaps
+			double target = currentChordDur;
 			for (int i = userCustomDurations.size()-1; i >= 0; i--) {
 				PhraseNote currentPn = userCustomDurations.get(i);
 				if (currentPn.getEndTime() + DBL_ERR < target) {
@@ -952,6 +968,12 @@ public class MidiGenerator implements JMC {
 			userCustomDurations.remakeNoteStartTimes(true);
 
 			// maybe ignore emphasizeKey if cust. durations enabled?
+
+			// TODO: weirdness in default preset - support for 0.5/2.0 multipliers / stretch to different chord durations
+
+			// TODO: issue with very short notes in last places
+
+			// TODO: add setting to decide if successive 0,1,2.. pitches deterministically decide which chord it belongs to, or picked randomly by weights
 
 			// TODO: add setting to toggle if custom durations should be exact, or "suggestions" (in that case, use generated durations, but keep pauses exact)
 
@@ -1578,16 +1600,7 @@ public class MidiGenerator implements JMC {
 
 		int hits = (int) Math.round(
 				chordsTotal * MELODY_PATTERN_RESOLUTION * measureTotal / Durations.WHOLE_NOTE);
-		double mult = 1;
-		SectionConfig sc = (currentSection != null) ? currentSection.getSecConfig() : null;
-		int beatDurMultiIndex = (sc != null && sc.getBeatDurationMultiplierIndex() != null)
-				? sc.getBeatDurationMultiplierIndex()
-				: gc.getBeatDurationMultiplierIndex();
-		if (beatDurMultiIndex == 0) {
-			mult = 0.5;
-		} else if (beatDurMultiIndex == 2) {
-			mult = 2;
-		}
+		double mult = getBeatDurationMult();
 		measureTotal = (measureTotal == null) ? (chordsTotal * mult * Durations.WHOLE_NOTE)
 				: measureTotal;
 		double timeForHit = measureTotal / hits;
@@ -1647,6 +1660,20 @@ public class MidiGenerator implements JMC {
 		}
 		//LG.i("Melody note pattern: " + StringUtils.join(pattern, ", "));
 		return pattern;
+	}
+
+	private double getBeatDurationMult() {
+		double mult = 1;
+		SectionConfig sc = (currentSection != null) ? currentSection.getSecConfig() : null;
+		int beatDurMultiIndex = (sc != null && sc.getBeatDurationMultiplierIndex() != null)
+				? sc.getBeatDurationMultiplierIndex()
+				: gc.getBeatDurationMultiplierIndex();
+		if (beatDurMultiIndex == 0) {
+			mult = 0.5;
+		} else if (beatDurMultiIndex == 2) {
+			mult = 2;
+		}
+		return mult;
 	}
 
 	private List<Double> makeSurpriseTrioArpedDurations(List<Double> durations) {
@@ -2803,18 +2830,7 @@ public class MidiGenerator implements JMC {
 		}
 
 		SectionConfig sc = (currentSection != null) ? currentSection.getSecConfig() : null;
-		int beatDurMultiIndex = (sc != null && sc.getBeatDurationMultiplierIndex() != null)
-				? sc.getBeatDurationMultiplierIndex()
-				: gc.getBeatDurationMultiplierIndex();
-		if (beatDurMultiIndex == 0) {
-			for (int i = 0; i < progressionDurations.size(); i++) {
-				progressionDurations.set(i, progressionDurations.get(i) * 0.5);
-			}
-		} else if (beatDurMultiIndex == 2) {
-			for (int i = 0; i < progressionDurations.size(); i++) {
-				progressionDurations.set(i, progressionDurations.get(i) * 2);
-			}
-		}
+		progressionDurations = adjustByBeatDurationMultiplier(sc, progressionDurations);
 
 		List<Double> actualDurations = progressionDurations;
 
@@ -3228,6 +3244,22 @@ public class MidiGenerator implements JMC {
 		gc.setActualArrangement(arr);
 		LG.i("MidiGenerator time: " + (System.currentTimeMillis() - systemTime) + " ms");
 		LG.i("********Viewing midi seed: " + mainGeneratorSeed + "************* ");
+	}
+
+	private List<Double> adjustByBeatDurationMultiplier(SectionConfig sc, List<Double> durations) {
+		int beatDurMultiIndex = (sc != null && sc.getBeatDurationMultiplierIndex() != null)
+				? sc.getBeatDurationMultiplierIndex()
+				: gc.getBeatDurationMultiplierIndex();
+		if (beatDurMultiIndex == 0) {
+			for (int i = 0; i < progressionDurations.size(); i++) {
+				progressionDurations.set(i, progressionDurations.get(i) * 0.5);
+			}
+		} else if (beatDurMultiIndex == 2) {
+			for (int i = 0; i < progressionDurations.size(); i++) {
+				progressionDurations.set(i, progressionDurations.get(i) * 2);
+			}
+		}
+		return durations;
 	}
 
 	private void setupScore(int mainGeneratorSeed, long systemTime, boolean logPerformance,
@@ -4221,16 +4253,7 @@ public class MidiGenerator implements JMC {
 
 		int chordCounter = 0;
 
-		double mult = 1;
-		SectionConfig sc = (currentSection != null) ? currentSection.getSecConfig() : null;
-		int beatDurMultiIndex = (sc != null && sc.getBeatDurationMultiplierIndex() != null)
-				? sc.getBeatDurationMultiplierIndex()
-				: gc.getBeatDurationMultiplierIndex();
-		if (beatDurMultiIndex == 0) {
-			mult = 0.5;
-		} else if (beatDurMultiIndex == 2) {
-			mult = 2;
-		}
+		double mult = getBeatDurationMult();
 		double separatorValue = Durations.WHOLE_NOTE * mult;
 		double chordSeparator = separatorValue;
 		Vector<Note> noteList = userMelody.getNoteList();
@@ -5267,6 +5290,9 @@ public class MidiGenerator implements JMC {
 
 				int actualPatternSize = (int) Math.round(arpPattern.size()
 						* progressionDurations.get(chordIndex) / Durations.WHOLE_NOTE);
+				/*if (arpPattern.size() > 0) {
+					actualPatternSize = Math.max(1, actualPatternSize);
+				}*/
 
 				chordDurationArp *= halfDurMulti;
 
@@ -5309,7 +5335,7 @@ public class MidiGenerator implements JMC {
 				int pulseListSize = Math.min(repeatedArpsPerChord, pitchPatternSpanned.size());
 				int pulse = 0;
 				double durationNow = 0;
-				while (durationNow + DBL_ERR < progressionDurations.get(chordIndex)) {
+				while (!pitchPatternSpanned.isEmpty() && (durationNow + DBL_ERR < progressionDurations.get(chordIndex))) {
 					int velocity = velocityPatternSpanned != null
 							? velocityPatternSpanned.get(pulse % velocityPatternSpanned.size())
 							: (velocityGenerator.nextInt(maxVel - minVel) + minVel);

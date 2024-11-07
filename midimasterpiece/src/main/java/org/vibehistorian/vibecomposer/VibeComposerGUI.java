@@ -6563,7 +6563,13 @@ public class VibeComposerGUI extends JFrame
 				LG.i("After slider setup: " + (System.currentTimeMillis() - systemTime));
 			}
 
-			sequencer.start();  // start the playback
+			if (sliderMeasureStartTimes.size() <= 1) {
+				new TemporaryInfoPopup("Generation produced no playable notes with the current settings - you're vibing too extremely! Change something!", 3000);
+				loopBeat.setSelected(false);
+			} else {
+				sequencer.start();  // start the playback
+			}
+
 			double divisor = 1;
 			if (beatDurationMultiplier.getSelectedIndex() == 0) {
 				divisor = 0.5;
