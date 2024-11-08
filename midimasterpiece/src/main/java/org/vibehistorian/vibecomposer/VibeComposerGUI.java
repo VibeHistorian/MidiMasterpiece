@@ -411,7 +411,7 @@ public class VibeComposerGUI extends JFrame
 	// melody extra settings
 	public static RandomIntegerListButton melodyBlockChoicePreference;
 	public static JCheckBox melodyUseCustomDurations;
-	public static MidiEditArea melodyCustomDurations;
+	public static JCheckBox melodyCustomDurationsRandomWeighting;
 
 	// bass gen settings
 	// - there's nothing here - 
@@ -1493,11 +1493,13 @@ public class VibeComposerGUI extends JFrame
 		});
 
 		melodyUseCustomDurations = new CustomCheckBox("Use custom durations", true);
+		melodyCustomDurationsRandomWeighting = new CustomCheckBox("Apply random weighting to custom durations", true);
 
 		melodyBlockChoicePreferencePanel.add(new JLabel("<html>Melody Block Choice<br>Preferred Order</html>"));
 		melodyBlockChoicePreferencePanel.add(melodyBlockChoicePreference);
 		melodyGenerationSettingsPanel.add(melodyBlockChoicePreferencePanel);
 		melodyGenerationSettingsPanel.add(melodyUseCustomDurations);
+		melodyGenerationSettingsPanel.add(melodyCustomDurationsRandomWeighting);
 		//melodyGenerationSettingsPanel.add("South", melodyCustomDurations);
 	}
 
@@ -8363,6 +8365,7 @@ public class VibeComposerGUI extends JFrame
 		gc.setMelodyBlockChoicePreference(melodyBlockChoicePreference.getValues());
 		gc.setMelodyBlockTypePreference(Arrays.stream(melodyBlockTypePreference).map(e -> e.getValue()).collect(Collectors.toList()));
 		gc.setMelodyUseCustomDurations(melodyUseCustomDurations.isSelected());
+		gc.setMelodyCustomDurationsRandomWeighting(melodyCustomDurationsRandomWeighting.isSelected());
 
 
 		// chords
@@ -8516,11 +8519,12 @@ public class VibeComposerGUI extends JFrame
 		melodyTargetNoteVariation.setInt(gc.getMelodyTargetNoteVariation());
 
 		melodyBlockChoicePreference.setValues(gc.getMelodyBlockChoicePreference());
-		for (int i = 0; i < 5; i++) {
+		for (int i = 0; i < BlockType.values().length; i++) {
 			int value = i < gc.getMelodyBlockTypePreference().size() ? gc.getMelodyBlockTypePreference().get(i) : BlockType.values()[i].defaultChance;
 			melodyBlockTypePreference[i].setValue(value);
 		}
 		melodyUseCustomDurations.setSelected(gc.isMelodyUseCustomDurations());
+		melodyCustomDurationsRandomWeighting.setSelected(gc.isMelodyCustomDurationsRandomWeighting());
 
 		// chords
 		spiceChance.setInt(gc.getSpiceChance());

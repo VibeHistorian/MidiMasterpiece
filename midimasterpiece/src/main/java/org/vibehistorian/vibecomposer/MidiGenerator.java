@@ -474,7 +474,8 @@ public class MidiGenerator implements JMC {
 				int remainingDirChanges = gc.getMelodyMaxDirChanges();
 				Pair<List<Integer>, Integer> blockChangesPair;
 
-				Map<Integer, List<PhraseNote>> customUserDurationsByBlock = convertCustomUserDurations(mp, melodyBlockGeneratorSeed, chordIndex);
+				Map<Integer, List<PhraseNote>> customUserDurationsByBlock = convertCustomUserDurations(mp, melodyBlockGeneratorSeed,
+						chordIndex, existingPattern != null ? blockSeedOffsets.indexOf(originalBlockOffset) : -1);
 				int numBlocks = !customUserDurationsByBlock.isEmpty() ? customUserDurationsByBlock.size() : durations.size();
 				if (existingPattern != null
 						&& gc.getMelodyPatternEffect() > 0) {
@@ -901,16 +902,20 @@ public class MidiGenerator implements JMC {
 		return mbs;
 	}
 
-	private Map<Integer, List<PhraseNote>> convertCustomUserDurations(MelodyPart mp, int melodyBlockGeneratorSeed, int chordIndex) {
+	private Map<Integer, List<PhraseNote>> convertCustomUserDurations(MelodyPart mp, int melodyBlockGeneratorSeed, int chordIndex, int blockOffsetChordIndex) {
 		Map<Integer, List<PhraseNote>> customUserDurationsByBlock = new LinkedHashMap<>();
 		if (gc.isMelodyUseCustomDurations() && mp.getCustomDurationNotes() != null && mp.getCustomDurationNotes().size() > 1) {
-			Random customDurationsGenerator = new Random(melodyBlockGeneratorSeed + 12);
 			PartPhraseNotes customDurationNotesMap = createCustomDurationNotesMap(mp.getCustomDurationNotes());
-			List<Integer> firstDurationWeights = customDurationNotesMap.stream().map(e -> e.get(0).getDynamic()).collect(Collectors.toList());
-			int[] weights = MelodyUtils.normalizedCumulativeWeights(firstDurationWeights.toArray(new Integer[]{}));
-			Integer value = OMNI.getWeightedValue(IntStream.range(0, customDurationNotesMap.size()).boxed().toArray(Integer[]::new),
-					customDurationsGenerator.nextInt(100), weights);
-			PhraseNotes userCustomDurations = customDurationNotesMap.get(value);
+			Integer indexValue = blockOffsetChordIndex >= 0 ? (blockOffsetChordIndex % customDurationNotesMap.size())
+					: (chordIndex % customDurationNotesMap.size());
+			Random customDurationsGenerator = new Random(melodyBlockGeneratorSeed + 12 + indexValue);
+			if (gc.isMelodyCustomDurationsRandomWeighting()) {
+				List<Integer> firstDurationWeights = customDurationNotesMap.stream().map(e -> e.get(0).getDynamic()).collect(Collectors.toList());
+				int[] weights = MelodyUtils.normalizedCumulativeWeights(firstDurationWeights.toArray(new Integer[]{}));
+				indexValue = OMNI.getWeightedValue(IntStream.range(0, customDurationNotesMap.size()).boxed().toArray(Integer[]::new),
+						customDurationsGenerator.nextInt(100), weights);
+			}
+			PhraseNotes userCustomDurations = customDurationNotesMap.get(indexValue);
 			double mult = getBeatDurationMult();
 			if (!MidiUtils.roughlyEqual(mult, 1.0)) {
 				userCustomDurations.stretch(mult, false);
@@ -922,11 +927,11 @@ public class MidiGenerator implements JMC {
 
 			double startTime = userCustomDurations.getIterationOrder().get(0).getStartTime();
 			if (startTime > DBL_ERR) {
-				userCustomDurations.add(0, new PhraseNote(value, 0, 0.0, startTime, 0.0));
+				userCustomDurations.add(0, new PhraseNote(indexValue, 0, 0.0, startTime, 0.0));
 			}
 			PhraseNote lastNote = userCustomDurations.getIterationOrder().get(userCustomDurations.size()-1);
 			if (lastNote.getEndTime() + DBL_ERR < currentChordDur) {
-				userCustomDurations.add(userCustomDurations.indexOf(lastNote) + 1, new PhraseNote(value, 0, 0.0,
+				userCustomDurations.add(userCustomDurations.indexOf(lastNote) + 1, new PhraseNote(indexValue, 0, 0.0,
 						currentChordDur - lastNote.getEndTime(),
 						lastNote.getOffset() + lastNote.getDuration()));
 				userCustomDurations.remakeNoteStartTimes(true);
@@ -946,20 +951,21 @@ public class MidiGenerator implements JMC {
 
 			// cleanup notes overlapping each other
 			for (int i = userCustomDurations.size()-1; i >= 1; i--) {
-				PhraseNote earlierPn = userCustomDurations.get(i-1);
-				PhraseNote currentPn = userCustomDurations.get(i);
+				PhraseNote earlierPn = userCustomDurations.getIterationOrder().get(i-1);
+				PhraseNote currentPn = userCustomDurations.getIterationOrder().get(i);
 				if (earlierPn.getEndTime() - DBL_ERR > currentPn.getStartTime()) {
 					earlierPn.setDuration(earlierPn.getDuration() - earlierPn.getEndTime() + currentPn.getStartTime());
+					userCustomDurations.remakeNoteStartTimes(true);
 				}
-				userCustomDurations.remakeNoteStartTimes(true);
 			}
 
 			// insert pauses between note gaps
 			double target = currentChordDur;
 			for (int i = userCustomDurations.size()-1; i >= 0; i--) {
-				PhraseNote currentPn = userCustomDurations.get(i);
+				PhraseNote currentPn = userCustomDurations.getIterationOrder().get(i);
 				if (currentPn.getEndTime() + DBL_ERR < target) {
-					userCustomDurations.add(i + 1, new PhraseNote(value, 0, 0.0,
+					int index = userCustomDurations.indexOf(currentPn);
+					userCustomDurations.add(index + 1, new PhraseNote(indexValue, 0, 0.0,
 							target - currentPn.getEndTime(), currentPn.getOffset() + currentPn.getDuration()));
 				}
 				target = currentPn.getStartTime();
@@ -969,16 +975,12 @@ public class MidiGenerator implements JMC {
 
 			// maybe ignore emphasizeKey if cust. durations enabled?
 
-			// TODO: weirdness in default preset - support for 0.5/2.0 multipliers / stretch to different chord durations
-
-			// TODO: issue with very short notes in last places
-
-			// TODO: add setting to decide if successive 0,1,2.. pitches deterministically decide which chord it belongs to, or picked randomly by weights
-
 			// TODO: add setting to toggle if custom durations should be exact, or "suggestions" (in that case, use generated durations, but keep pauses exact)
 
 			// TODO: move melody generation to separate class, separate methods
 			// TODO: add note to an empty note list if deleted last one
+			// TODO: enable keyboard shortcuts like in MidiEditArea
+            // TODO: when drawing in notes, reuse last edited note length
 
 			// ?? apply roughlyEqual filter to weighting, so that only matching sums are considered in the first place
 			//  (= support for different settings of different chord durations)
