@@ -475,7 +475,7 @@ public class MidiGenerator implements JMC {
 				Pair<List<Integer>, Integer> blockChangesPair;
 
 				Map<Integer, List<PhraseNote>> customUserDurationsByBlock = convertCustomUserDurations(mp, melodyBlockGeneratorSeed,
-						chordIndex, existingPattern != null ? blockSeedOffsets.indexOf(originalBlockOffset) : -1);
+						chordIndex, (gc.isMelodyCustomDurationsRandomWeighting() && existingPattern != null) ? blockSeedOffsets.indexOf(originalBlockOffset) : blockOffset);
 				int numBlocks = !customUserDurationsByBlock.isEmpty() ? customUserDurationsByBlock.size() : durations.size();
 				if (existingPattern != null
 						&& gc.getMelodyPatternEffect() > 0) {
@@ -987,7 +987,7 @@ public class MidiGenerator implements JMC {
 			List<PhraseNote> customDurationsBlock = new ArrayList<>();
 			int blockCounter = 0;
 			int sizeCounter = 0;
-			for (PhraseNote pn : userCustomDurations) {
+			for (PhraseNote pn : userCustomDurations.getIterationOrder()) {
 				customDurationsBlock.add(pn);
 				if (pn.getDynamic() > 0) {
 					sizeCounter++;
