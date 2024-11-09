@@ -574,7 +574,7 @@ public class VibeComposerGUI extends JFrame
 
 	Thread cycle;
 	JCheckBox useMidiCC;
-	CheckButton loopBeat;
+	static CheckButton loopBeat;
 	ScrollComboBox<String> loopBeatCompose;
 	public static JPanel sliderPanel;
 	public static PlayheadRangeSlider slider;
@@ -665,6 +665,10 @@ public class VibeComposerGUI extends JFrame
 			public void uncaughtException(Thread t, Throwable e) {
 				LG.e("Uncaught EXCEPTION!", e);
 				new TemporaryInfoPopup("Unknown error! " + BUG_HUNT_MESSAGE, 3000);
+				if (sequencer != null && sequencer.isRunning()) {
+					sequencer.stop();
+				}
+				loopBeat.setSelected(false);
 			}
 		});
 
@@ -5988,6 +5992,10 @@ public class VibeComposerGUI extends JFrame
 			LG.e("Exception during midi generation! Cause: " + e.getMessage(), e);
 			heavyBackgroundTasksInProgress = false;
 			new TemporaryInfoPopup(BUG_HUNT_MESSAGE, null);
+			if (sequencer != null && sequencer.isRunning()) {
+				sequencer.stop();
+			}
+			loopBeat.setSelected(false);
 			reapplySolosMutes();
 			return;
 		}
