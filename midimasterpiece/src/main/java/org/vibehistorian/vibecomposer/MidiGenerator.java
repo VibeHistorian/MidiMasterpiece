@@ -474,8 +474,10 @@ public class MidiGenerator implements JMC {
 				int remainingDirChanges = gc.getMelodyMaxDirChanges();
 				Pair<List<Integer>, Integer> blockChangesPair;
 
+
+				int originalBlockOffsetIndex = (originalBlockOffset < 0) ? (blockSeedOffsets.indexOf(originalBlockOffset * -1)) : blockSeedOffsets.indexOf(originalBlockOffset);
 				Map<Integer, List<PhraseNote>> customUserDurationsByBlock = convertCustomUserDurations(mp, melodyBlockGeneratorSeed,
-						chordIndex, (gc.isMelodyCustomDurationsRandomWeighting() && existingPattern != null) ? blockSeedOffsets.indexOf(originalBlockOffset) : blockOffset);
+						chordIndex, (gc.isMelodyCustomDurationsRandomWeighting() && existingPattern != null) ? originalBlockOffsetIndex : blockOffset);
 				int numBlocks = !customUserDurationsByBlock.isEmpty() ? customUserDurationsByBlock.size() : durations.size();
 				if (existingPattern != null
 						&& gc.getMelodyPatternEffect() > 0) {
@@ -636,7 +638,7 @@ public class MidiGenerator implements JMC {
 							exceptionCounter--;
 						}
 
-						double swingDuration = (pitch != Pitches.REST && !converted) ? sortedDurs.get(validNoteCounter) : mb.durations.get(k);
+						double swingDuration = (pitch != Pitches.REST && (!converted || !gc.isMelodyCustomDurationsStrictMode())) ? sortedDurs.get(validNoteCounter) : mb.durations.get(k);
 						if (pitch != Pitches.REST) {
 							validNoteCounter++;
 						}
@@ -916,6 +918,8 @@ public class MidiGenerator implements JMC {
 						customDurationsGenerator.nextInt(100), weights);
 			}
 			PhraseNotes userCustomDurations = customDurationNotesMap.get(indexValue);
+			int pitchValue = userCustomDurations.get(0).getPitch();
+
 			double mult = getBeatDurationMult();
 			if (!MidiUtils.roughlyEqual(mult, 1.0)) {
 				userCustomDurations.stretch(mult, false);
@@ -927,11 +931,11 @@ public class MidiGenerator implements JMC {
 
 			double startTime = userCustomDurations.getIterationOrder().get(0).getStartTime();
 			if (startTime > DBL_ERR) {
-				userCustomDurations.add(0, new PhraseNote(indexValue, 0, 0.0, startTime, 0.0));
+				userCustomDurations.add(0, new PhraseNote(pitchValue, 0, 0.0, startTime, 0.0));
 			}
 			PhraseNote lastNote = userCustomDurations.getIterationOrder().get(userCustomDurations.size()-1);
 			if (lastNote.getEndTime() + DBL_ERR < currentChordDur) {
-				userCustomDurations.add(userCustomDurations.indexOf(lastNote) + 1, new PhraseNote(indexValue, 0, 0.0,
+				userCustomDurations.add(userCustomDurations.indexOf(lastNote) + 1, new PhraseNote(pitchValue, 0, 0.0,
 						currentChordDur - lastNote.getEndTime(),
 						lastNote.getOffset() + lastNote.getDuration()));
 				userCustomDurations.remakeNoteStartTimes(true);
@@ -965,7 +969,7 @@ public class MidiGenerator implements JMC {
 				PhraseNote currentPn = userCustomDurations.getIterationOrder().get(i);
 				if (currentPn.getEndTime() + DBL_ERR < target) {
 					int index = userCustomDurations.indexOf(currentPn);
-					userCustomDurations.add(index + 1, new PhraseNote(indexValue, 0, 0.0,
+					userCustomDurations.add(index + 1, new PhraseNote(pitchValue, 0, 0.0,
 							target - currentPn.getEndTime(), currentPn.getOffset() + currentPn.getDuration()));
 				}
 				target = currentPn.getStartTime();
@@ -975,12 +979,9 @@ public class MidiGenerator implements JMC {
 
 			// maybe ignore emphasizeKey if cust. durations enabled?
 
-			// TODO: add setting to toggle if custom durations should be exact, or "suggestions" (in that case, use generated durations, but keep pauses exact)
-
 			// TODO: move melody generation to separate class, separate methods
 			// TODO: add note to an empty note list if deleted last one
-			// TODO: enable keyboard shortcuts like in MidiEditArea
-            // TODO: when drawing in notes, reuse last edited note length
+			// TODO: enable keyboard shortcuts like in MidiEditArea + move undo/redo to MidiEditArea, make Popup refer to Area's functionality
 
 			// ?? apply roughlyEqual filter to weighting, so that only matching sums are considered in the first place
 			//  (= support for different settings of different chord durations)

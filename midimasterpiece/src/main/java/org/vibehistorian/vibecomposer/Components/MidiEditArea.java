@@ -25,6 +25,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static org.vibehistorian.vibecomposer.MidiGenerator.DBL_ERR;
+
 public class MidiEditArea extends JComponent {
 
 	public static final double[] TIME_GRID = new double[] { 0.125, 1 / 6.0, MidiGenerator.Durations.SIXTEENTH_NOTE, 1 / 3.0, MidiGenerator.Durations.EIGHTH_NOTE,
@@ -65,6 +67,8 @@ public class MidiEditArea extends JComponent {
 	Integer highlightedDragLocation;
 	Integer prevHighlightedDragLocation;
 	Point mousePoint;
+
+	public Double lastUsedDuration = MidiGenerator.Durations.EIGHTH_NOTE;
 
 	public boolean drawNoteStrings = true;
 	public boolean splitNotesByGrid = false;
@@ -362,7 +366,9 @@ public class MidiEditArea extends JComponent {
 					PhraseNote insertedPn = new PhraseNote(pop != null && pop.isSnapPitch()
 							? (MidiUtils.octavePitch(orderVal.y) + closestNormalized)
 							: orderVal.y);
-					insertedPn.setDuration(MidiGenerator.Durations.EIGHTH_NOTE);
+					insertedPn.setDuration((lastUsedDuration != null && lastUsedDuration + DBL_ERR > MidiGenerator.Durations.SIXTEENTH_NOTE / 2.0)
+							? lastUsedDuration
+							: MidiGenerator.Durations.EIGHTH_NOTE);
 					insertedPn.setRv(0);
 					insertedPn.setOffset(values.get(orderVal.x).getOffset());
 					insertedPn.setStartTime(values.get(orderVal.x).getStartTime());
@@ -637,6 +643,7 @@ public class MidiEditArea extends JComponent {
 						}
 					} else {
 						draggedNote.setDuration(duration);
+						lastUsedDuration = duration;
 					}
 
 				}
@@ -752,7 +759,7 @@ public class MidiEditArea extends JComponent {
 	}
 
 	void setVal(int pos, int pitch) {
-		if (pitch == Note.REST && values.get(pos).getRv() < MidiGenerator.DBL_ERR) {
+		if (pitch == Note.REST && values.get(pos).getRv() < DBL_ERR) {
 			values.remove(pos);
 		} else {
 			if (pop != null && pop.isSnapPitch()) {
@@ -933,7 +940,7 @@ public class MidiEditArea extends JComponent {
 				int numMeasures = (pop == null ? 1 : pop.getSec().getMeasures());
 				double spacingSum = chordSpacings.stream().mapToDouble(e -> e).sum()
 						* numMeasures;
-				if (sectionLength > MidiGenerator.DBL_ERR && spacingSum > MidiGenerator.DBL_ERR
+				if (sectionLength > DBL_ERR && spacingSum > DBL_ERR
 						&& !MidiUtils.roughlyEqual(spacingSum, sectionLength)) {
 					for (int i = 0; i < chordSpacings.size(); i++) {
 						chordSpacings.set(i, chordSpacings.get(i) * sectionLength / spacingSum);
@@ -950,7 +957,7 @@ public class MidiEditArea extends JComponent {
 							OMNI.alphen(VibeComposerGUI.isDarkMode ? Color.green : Color.red, 90));
 					int drawX = bottomLeft.x + (int) (quarterNoteLength * line);
 					// vertical separators
-					if ((i > 0) || (getPhraseMarginX() > MidiGenerator.DBL_ERR)) {
+					if ((i > 0) || (getPhraseMarginX() > DBL_ERR)) {
 						g.drawLine(drawX, bottomLeft.y, drawX, 0);
 					}
 
@@ -977,7 +984,7 @@ public class MidiEditArea extends JComponent {
 					line += chordSpacings.get(i);
 				}
 
-				if (getPhraseMarginX() > MidiGenerator.DBL_ERR) {
+				if (getPhraseMarginX() > DBL_ERR) {
 					g.setColor(
 							OMNI.alphen(VibeComposerGUI.isDarkMode ? Color.green : Color.red, 90));
 					int drawX = bottomLeft.x + (int) (quarterNoteLength * line);
@@ -1328,7 +1335,7 @@ public class MidiEditArea extends JComponent {
 		double searchTime = ((xy.x - bottomLeftAdjusted.x) / quarterNoteLength)
 				- getPhraseMarginX();
 		//LG.d(searchX);
-		Integer foundX = searchTime < MidiGenerator.DBL_ERR ? 0 : null;
+		Integer foundX = searchTime < DBL_ERR ? 0 : null;
 		if (foundX == null) {
 			List<Integer> possibleNotes = new ArrayList<>();
 			if (getClosestOriginal) {
@@ -1343,8 +1350,8 @@ public class MidiEditArea extends JComponent {
 				}
 			} else {
 				for (int i = 0; i < values.size(); i++) {
-					if (searchTime + MidiGenerator.DBL_ERR > values.get(i).getStart(offsetted)
-							&& searchTime - MidiGenerator.DBL_ERR < values.get(i)
+					if (searchTime + DBL_ERR > values.get(i).getStart(offsetted)
+							&& searchTime - DBL_ERR < values.get(i)
 									.getStart(offsetted) + values.get(i).getDuration()) {
 						possibleNotes.add(i);
 					}

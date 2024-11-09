@@ -121,6 +121,7 @@ public class GUIConfig {
 	private boolean melodyRhythmAccentsPocket = false;
 	private boolean melodyUseCustomDurations = false;
 	private boolean melodyCustomDurationsRandomWeighting = false;
+	private boolean melodyCustomDurationsStrictMode = true;
 
 	// chord gen
 	private int chordSlashChance = 0;
@@ -1007,5 +1008,13 @@ public class GUIConfig {
 
 	public void setMelodyCustomDurationsRandomWeighting(boolean melodyCustomDurationsRandomWeighting) {
 		this.melodyCustomDurationsRandomWeighting = melodyCustomDurationsRandomWeighting;
+	}
+
+	public boolean isMelodyCustomDurationsStrictMode() {
+		return melodyCustomDurationsStrictMode;
+	}
+
+	public void setMelodyCustomDurationsStrictMode(boolean melodyCustomDurationsStrictMode) {
+		this.melodyCustomDurationsStrictMode = melodyCustomDurationsStrictMode;
 	}
 }

@@ -412,6 +412,7 @@ public class VibeComposerGUI extends JFrame
 	public static RandomIntegerListButton melodyBlockChoicePreference;
 	public static JCheckBox melodyUseCustomDurations;
 	public static JCheckBox melodyCustomDurationsRandomWeighting;
+	public static JCheckBox melodyCustomDurationsStrictMode;
 
 	// bass gen settings
 	// - there's nothing here - 
@@ -1494,12 +1495,19 @@ public class VibeComposerGUI extends JFrame
 
 		melodyUseCustomDurations = new CustomCheckBox("Use custom durations", true);
 		melodyCustomDurationsRandomWeighting = new CustomCheckBox("Apply random weighting to custom durations", true);
+		melodyCustomDurationsStrictMode = new CustomCheckBox("Apply custom durations strictly (strict mode)", true);
 
 		melodyBlockChoicePreferencePanel.add(new JLabel("<html>Melody Block Choice<br>Preferred Order</html>"));
 		melodyBlockChoicePreferencePanel.add(melodyBlockChoicePreference);
 		melodyGenerationSettingsPanel.add(melodyBlockChoicePreferencePanel);
-		melodyGenerationSettingsPanel.add(melodyUseCustomDurations);
-		melodyGenerationSettingsPanel.add(melodyCustomDurationsRandomWeighting);
+
+		JPanel melodyCustomDurationsPanel = new JPanel();
+		melodyCustomDurationsPanel.setLayout(new GridLayout(0, 2));
+		melodyCustomDurationsPanel.setBorder(new BevelBorder(BevelBorder.LOWERED));
+		melodyCustomDurationsPanel.add(melodyUseCustomDurations);
+		melodyCustomDurationsPanel.add(melodyCustomDurationsRandomWeighting);
+		melodyCustomDurationsPanel.add(melodyCustomDurationsStrictMode);
+		melodyGenerationSettingsPanel.add(melodyCustomDurationsPanel);
 		//melodyGenerationSettingsPanel.add("South", melodyCustomDurations);
 	}
 
@@ -8366,6 +8374,7 @@ public class VibeComposerGUI extends JFrame
 		gc.setMelodyBlockTypePreference(Arrays.stream(melodyBlockTypePreference).map(e -> e.getValue()).collect(Collectors.toList()));
 		gc.setMelodyUseCustomDurations(melodyUseCustomDurations.isSelected());
 		gc.setMelodyCustomDurationsRandomWeighting(melodyCustomDurationsRandomWeighting.isSelected());
+		gc.setMelodyCustomDurationsStrictMode(melodyCustomDurationsStrictMode.isSelected());
 
 
 		// chords
@@ -8525,6 +8534,7 @@ public class VibeComposerGUI extends JFrame
 		}
 		melodyUseCustomDurations.setSelected(gc.isMelodyUseCustomDurations());
 		melodyCustomDurationsRandomWeighting.setSelected(gc.isMelodyCustomDurationsRandomWeighting());
+		melodyCustomDurationsStrictMode.setSelected(gc.isMelodyCustomDurationsStrictMode());
 
 		// chords
 		spiceChance.setInt(gc.getSpiceChance());
