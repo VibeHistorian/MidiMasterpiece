@@ -47,7 +47,7 @@ public class MelodyPanel extends InstPanel {
 	private KnobPanel startNoteChance = new KnobPanel("Start%", 80);
 	private JCheckBox patternFlexible = new CustomCheckBox("Flex", true);
 
-	private PhraseNotes customDurationValues = new PhraseNotes(PhraseNotes.blankNoteList());
+	private PhraseNotes customDurationValues = new PhraseNotes();
 
 	public void initComponents(ActionListener l) {
 

@@ -980,8 +980,6 @@ public class MidiGenerator implements JMC {
 			// maybe ignore emphasizeKey if cust. durations enabled?
 
 			// TODO: move melody generation to separate class, separate methods
-			// TODO: add note to an empty note list if deleted last one
-			// TODO: enable keyboard shortcuts like in MidiEditArea + move undo/redo to MidiEditArea, make Popup refer to Area's functionality
 
 			// ?? apply roughlyEqual filter to weighting, so that only matching sums are considered in the first place
 			//  (= support for different settings of different chord durations)

@@ -273,6 +273,8 @@ public class MidiEditArea extends JComponent {
 			if (pop != null) {
 				pop.editHistoryBox.setSelectedIndex(index);
 				pop.repaintMvea();
+			} else {
+				setAndRepaint();
 			}
 		}
 	}
@@ -529,8 +531,14 @@ public class MidiEditArea extends JComponent {
 			}
 		} else {
 			if (draggedNote == null) {
+				PhraseNote insertedPn = null;
+				int yValue = getPitchFromPosition(evt.getPoint().y);
+				if (values.isEmpty()) {
+					insertedPn = new PhraseNote(yValue);
+				}
 				Point orderVal = getOrderAndValueFromPosition(evt.getPoint(), false, true);
-				if (orderVal != null && !values.isEmpty()) {
+				PhraseNote oldPn = (!values.isEmpty() && orderVal != null) ? values.get(orderVal.x) : insertedPn;
+				if (oldPn != null) {
 					/*if (pn.getPitch() == Note.REST && pn.getRv() > MidiGenerator.DBL_ERR) {
 					
 						LG.d("UnRESTing existing original note..");
@@ -541,18 +549,18 @@ public class MidiEditArea extends JComponent {
 
 					LG.d("Inserting new note..");
 					int closestNormalized = MidiUtils.getClosestFromList(MidiUtils.MAJ_SCALE,
-							orderVal.y % 12);
-					PhraseNote insertedPn = new PhraseNote(pop != null && pop.isSnapPitch()
-							? (MidiUtils.octavePitch(orderVal.y) + closestNormalized)
-							: orderVal.y);
+							yValue % 12);
+					insertedPn = new PhraseNote(pop != null && pop.isSnapPitch()
+							? (MidiUtils.octavePitch(yValue) + closestNormalized)
+							: yValue);
 					insertedPn.setDuration((lastUsedDuration != null && lastUsedDuration + DBL_ERR > MidiGenerator.Durations.SIXTEENTH_NOTE / 2.0)
 							? lastUsedDuration
 							: MidiGenerator.Durations.EIGHTH_NOTE);
 					insertedPn.setRv(0);
-					insertedPn.setOffset(values.get(orderVal.x).getOffset());
-					insertedPn.setStartTime(values.get(orderVal.x).getStartTime());
-					insertedPn.setAbsoluteStartTime(values.get(orderVal.x).getAbsoluteStartTime());
-					getValues().add(orderVal.x, insertedPn);
+					insertedPn.setOffset(oldPn.getOffset());
+					insertedPn.setStartTime(oldPn.getStartTime());
+					insertedPn.setAbsoluteStartTime(oldPn.getAbsoluteStartTime());
+					values.add(values.isEmpty() ? 0 : orderVal.x, insertedPn);
 
 
 					draggedNote = insertedPn;
