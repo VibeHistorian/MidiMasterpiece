@@ -25,6 +25,7 @@ public class CustomDurationsEditPopup extends CloseablePopup {
         cdMvea.setPreferredSize(new Dimension(1000, 500));
         cdMveaPanel.setPreferredSize(new Dimension(1000, 500));
         cdMveaPanel.add(cdMvea);
+        cdMvea.addKeyboardControls(cdMveaPanel);
         frame.add(cdMveaPanel);
         frame.pack();
         frame.setVisible(true);

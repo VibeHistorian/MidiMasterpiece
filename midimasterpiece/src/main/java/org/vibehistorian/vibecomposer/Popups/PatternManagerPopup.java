@@ -6,13 +6,11 @@ import org.vibehistorian.vibecomposer.Components.ScrollComboBox;
 import org.vibehistorian.vibecomposer.Helpers.PhraseNotes;
 import org.vibehistorian.vibecomposer.Helpers.UsedPattern;
 import org.vibehistorian.vibecomposer.LG;
-import org.vibehistorian.vibecomposer.OMNI;
 import org.vibehistorian.vibecomposer.Popups.MidiEditPopup.PatternNameMarker;
 import org.vibehistorian.vibecomposer.VibeComposerGUI;
 
 import javax.swing.*;
 import java.awt.*;
-import java.util.IntSummaryStatistics;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -77,7 +75,7 @@ public class PatternManagerPopup extends CloseablePopup {
 			if (depth == 3) {
 				PhraseNotes pn = VibeComposerGUI.guiConfig.getPattern(part, partOrder, name);
 				if (pn != null) {
-					setCustomValues(pn);
+					mvea.setCustomValues(pn);
 				}
 			}
 
@@ -119,35 +117,6 @@ public class PatternManagerPopup extends CloseablePopup {
 	@Override
 	protected void addFrameWindowOperation() {
 		frame.addWindowListener(EMPTY_WINDOW_LISTENER);
-	}
-
-	public void setCustomValues(PhraseNotes values) {
-		int vmin = -1 * MidiEditPopup.baseMargin * MidiEditPopup.trackScope;
-		int vmax = MidiEditPopup.baseMargin * MidiEditPopup.trackScope;
-		if (!values.isEmpty()) {
-			IntSummaryStatistics notes = values.stream().map(e -> e.getPitch()).filter(e -> e >= 0)
-					.mapToInt(e -> e).boxed().collect(Collectors.summarizingInt(Integer::intValue));
-			if (notes.getCount() > 0) {
-				vmin += notes.getMin();
-				vmax += notes.getMax();
-			}
-		}
-		mvea.setCurrentMin(Math.min(mvea.currentMin, vmin));
-		mvea.setCurrentMax(Math.max(mvea.currentMax, vmax));
-
-
-		mvea.part = OMNI.clamp(patternPartBox.getSelectedIndex(), 0, 4);
-		mvea.marginX = (mvea.part == 4) ? 160 : 80;
-
-		mvea.setValues(values);
-
-		repaintMvea();
-	}
-
-	public void repaintMvea() {
-		mvea.setAndRepaint();
-		mvea.sectionLength = mvea.getValues().stream().map(e -> e.getRv())
-				.mapToDouble(e -> e).sum();
 	}
 
 	private void loadParts() {

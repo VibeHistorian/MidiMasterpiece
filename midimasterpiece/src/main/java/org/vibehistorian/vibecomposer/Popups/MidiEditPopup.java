@@ -20,7 +20,6 @@ import org.vibehistorian.vibecomposer.LG;
 import org.vibehistorian.vibecomposer.MidiGenerator;
 import org.vibehistorian.vibecomposer.MidiUtils;
 import org.vibehistorian.vibecomposer.MidiUtils.ScaleMode;
-import org.vibehistorian.vibecomposer.OMNI;
 import org.vibehistorian.vibecomposer.Panels.InstPanel;
 import org.vibehistorian.vibecomposer.Parts.ArpPart;
 import org.vibehistorian.vibecomposer.Parts.BassPart;
@@ -34,11 +33,8 @@ import org.vibehistorian.vibecomposer.VibeComposerGUI;
 import javax.swing.*;
 import javax.swing.border.BevelBorder;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.InputEvent;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
-import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowEvent;
@@ -85,8 +81,6 @@ public class MidiEditPopup extends CloseablePopup {
 
 	public JList<File> generatedMidi;
 	public boolean saveOnClose = true;
-	public int notesHistoryIndex = 0;
-	public List<PhraseNotes> notesHistory = new ArrayList<>();
 
 	public int part = 0;
 	public int partOrder = 0;
@@ -137,7 +131,7 @@ public class MidiEditPopup extends CloseablePopup {
 
 		JPanel bottomSettingsPanel = bottomActionsPreferencesPanel(values);
 
-		setCustomValues(values);
+		mvea.setCustomValues(values, baseMargin, trackScope);
 
 		values.remakeNoteStartTimes();
 
@@ -156,7 +150,7 @@ public class MidiEditPopup extends CloseablePopup {
 
 		allPanels.add(mveaPanel);
 
-		addKeyboardControls(allPanels);
+		mvea.addKeyboardControls(allPanels);
 
 		//SwingUtils.setFrameLocation(frame, VibeComposerGUI.vibeComposerGUI.getLocation());
 		frame.setLocation(VibeComposerGUI.vibeComposerGUI.getLocation());
@@ -180,51 +174,6 @@ public class MidiEditPopup extends CloseablePopup {
 			setSelectedPattern(pat);
 		}
 		return values;
-	}
-
-	private void addKeyboardControls(JPanel allPanels) {
-		Action undoAction = new AbstractAction() {
-			public void actionPerformed(ActionEvent e) {
-				undo();
-			}
-		};
-		Action redoAction = new AbstractAction() {
-			public void actionPerformed(ActionEvent e) {
-				redo();
-			}
-		};
-
-		Action deleteAction = new AbstractAction() {
-			public void actionPerformed(ActionEvent e) {
-				deleteSelected();
-			}
-		};
-		Action selectAllAction = new AbstractAction() {
-			public void actionPerformed(ActionEvent e) {
-				selectAll();
-			}
-		};
-		Action transposeSelectedAction = new AbstractAction() {
-			public void actionPerformed(ActionEvent e) {
-				transposeSelected();
-			}
-		};
-		allPanels.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT)
-				.put(KeyStroke.getKeyStroke(KeyEvent.VK_Z, InputEvent.CTRL_DOWN_MASK), "undo");
-		allPanels.getActionMap().put("undo", undoAction);
-		allPanels.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT)
-				.put(KeyStroke.getKeyStroke(KeyEvent.VK_Y, InputEvent.CTRL_DOWN_MASK), "redo");
-		allPanels.getActionMap().put("redo", redoAction);
-		allPanels.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT)
-				.put(KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, 0), "delete");
-		allPanels.getActionMap().put("delete", deleteAction);
-		allPanels.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT)
-				.put(KeyStroke.getKeyStroke(KeyEvent.VK_A, InputEvent.CTRL_DOWN_MASK), "selectAll");
-		allPanels.getActionMap().put("selectAll", selectAllAction);
-		allPanels.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(
-				KeyStroke.getKeyStroke(KeyEvent.VK_T, InputEvent.CTRL_DOWN_MASK),
-				"transposeSelected");
-		allPanels.getActionMap().put("transposeSelected", transposeSelectedAction);
 	}
 
 	private JPanel makeTopButtonPanel() {
@@ -269,7 +218,7 @@ public class MidiEditPopup extends CloseablePopup {
 					}
 				}
 			}
-			saveToHistory();
+			mvea.saveToHistory();
 			repaintMvea();
 		}));
 
@@ -281,12 +230,12 @@ public class MidiEditPopup extends CloseablePopup {
 			mvea.getValues().forEach(n -> n.setDynamic(rand.nextInt(velmax - velmin + 1) + velmin));
 
 
-			saveToHistory();
+			mvea.saveToHistory();
 			repaintMvea();
 		}));
 
-		buttonPanel.add(VibeComposerGUI.makeButton("Undo", e -> undo()));
-		buttonPanel.add(VibeComposerGUI.makeButton("Redo", e -> redo()));
+		buttonPanel.add(VibeComposerGUI.makeButton("Undo", e -> mvea.undo()));
+		buttonPanel.add(VibeComposerGUI.makeButton("Redo", e -> mvea.redo()));
 
 		JPanel midiDragDropPanel = makeMidiDragDropPanel();
 		buttonPanel.add(midiDragDropPanel);
@@ -325,7 +274,7 @@ public class MidiEditPopup extends CloseablePopup {
 				lastNote.setRv(lastNote.getRv() + mvea.sectionLength - length);
 			}
 			pn.forEach(f -> f.setPitch(f.getPitch() - VibeComposerGUI.transposeScore.getInt()));
-			setCustomValues(pn.copy());
+			mvea.setCustomValues(pn.copy());
 
 			return pn;
 		}));
@@ -430,8 +379,8 @@ public class MidiEditPopup extends CloseablePopup {
 		bottomSettingsPanel.add(recompButt);
 
 		editHistoryBox.setFunc(e -> {
-			if (notesHistoryIndex != editHistoryBox.getSelectedIndex()) {
-				loadFromHistory(editHistoryBox.getSelectedIndex());
+			if (mvea.notesHistoryIndex != editHistoryBox.getSelectedIndex()) {
+				mvea.loadFromHistory(editHistoryBox.getSelectedIndex());
 			}
 		});
 		bottomSettingsPanel.add(historyLabel);
@@ -558,7 +507,7 @@ public class MidiEditPopup extends CloseablePopup {
 		}
 
 		if (overwrite) {
-			setCustomValues(pn);
+			mvea.setCustomValues(pn);
 		} else {
 			// import instead
 			UsedPattern pat = sec.getPattern(part, partOrder);
@@ -579,9 +528,9 @@ public class MidiEditPopup extends CloseablePopup {
 					oldPn.add(0, n);
 				}
 
-				setCustomValues(oldPn);
+				mvea.setCustomValues(oldPn);
 			} else {
-				setCustomValues(pn);
+				mvea.setCustomValues(pn);
 			}
 			boolean loadOnSelectChoiceOLD = loadOnSelectChoice;
 			loadOnSelectChoice = false;
@@ -643,33 +592,6 @@ public class MidiEditPopup extends CloseablePopup {
 		return VibeComposerGUI.guiConfig.getPatternMaps().get(patternPartBox.getSelectedIndex());
 	}
 
-	public void setCustomValues(PhraseNotes values) {
-
-		if (values == null || values.isEmpty()) {
-			new TemporaryInfoPopup("Empty pattern!", 1000);
-			return;
-		}
-
-		int vmin = -1 * baseMargin * trackScope;
-		int vmax = baseMargin * trackScope;
-		if (!values.isEmpty()) {
-			vmin += values.stream().map(e -> e.getPitch()).filter(e -> e >= 0).mapToInt(e -> e)
-					.min().getAsInt();
-			vmax += values.stream().map(e -> e.getPitch()).filter(e -> e >= 0).mapToInt(e -> e)
-					.max().getAsInt();
-		}
-		mvea.setCurrentMin(Math.min(mvea.currentMin, vmin));
-		mvea.setCurrentMax(Math.max(mvea.currentMax, vmax));
-
-
-		mvea.part = part;
-		mvea.marginX = (mvea.part == 4) ? 160 : 80;
-		mvea.setValues(values);
-		saveToHistory();
-
-		repaintMvea();
-	}
-
 	public void setupIdentifiers(int secPartNum, int secPartOrder) {
 		part = secPartNum;
 		partOrder = secPartOrder;
@@ -719,58 +641,6 @@ public class MidiEditPopup extends CloseablePopup {
 		return f;
 	}
 
-	public void deleteSelected() {
-		if (mvea.selectedNotes.size() > 0) {
-			mvea.selectedNotes.forEach(e -> {
-				if (e.getRv() < MidiGenerator.DBL_ERR) {
-					mvea.getValues().remove(e);
-				} else {
-					e.setPitch(Note.REST);
-				}
-			});
-			mvea.selectedNotes.clear();
-			mvea.selectedNotesCopy.clear();
-			mvea.reset();
-			saveToHistory();
-
-			if (MidiEditPopup.regenerateInPlaceChoice) {
-				VibeComposerGUI.vibeComposerGUI.regenerateInPlace();
-			}
-		}
-	}
-
-	public void transposeSelected() {
-		new TextProcessingPopup("Transpose amount", e -> {
-			if (mvea == null || mvea.selectedNotes == null || mvea.selectedNotes.isEmpty()) {
-				new TemporaryInfoPopup("No notes selected!", 1000);
-				return;
-			}
-			try {
-				int parsedInt = Integer.valueOf(e);
-				for (PhraseNote n : mvea.selectedNotes) {
-					// 0..127 midi value
-					n.setPitch(OMNI.clampMidi(n.getPitch() + parsedInt));
-				}
-				setCustomValues(mvea.getValues());
-
-				if (MidiEditPopup.regenerateInPlaceChoice) {
-					mvea.selectedNotes.clear();
-					mvea.selectedNotesCopy.clear();
-					VibeComposerGUI.vibeComposerGUI.regenerateInPlace();
-				}
-			} catch (Exception ex) {
-				new TemporaryInfoPopup("Invalid number entered!", 1500);
-			}
-		});
-	}
-
-	public void selectAll() {
-		mvea.selectedNotes.clear();
-		mvea.selectedNotes.addAll(mvea.getValues().stream().filter(e -> e.getPitch() >= 0)
-				.collect(Collectors.toList()));
-		mvea.makeSelectedNotesCopy();
-	}
-
 	public void apply() {
 		if (mvea != null && mvea.getValues() != null) {
 			// TODO
@@ -799,20 +669,6 @@ public class MidiEditPopup extends CloseablePopup {
 		}
 	}
 
-	public void undo() {
-		loadFromHistory(notesHistoryIndex - 1);
-
-		if (MidiEditPopup.regenerateInPlaceChoice) {
-			mvea.selectedNotes.clear();
-			mvea.selectedNotesCopy.clear();
-			VibeComposerGUI.vibeComposerGUI.regenerateInPlace();
-		}
-	}
-
-	public void redo() {
-		loadFromHistory(notesHistoryIndex + 1);
-	}
-
 	public void setup(Section sec) {
 		LG.i("Midi Edit Popup Setup, Part: " + part + ", Order: " + partOrder);
 
@@ -834,32 +690,9 @@ public class MidiEditPopup extends CloseablePopup {
 			LG.e("-----------------------Part needed to be recomposed on setup!--------------");
 			values = recomposePart(false);
 		}
-		setCustomValues(values);
+		mvea.setCustomValues(values);
 
 		LG.i("Custom MIDI setup successful: " + part + ", " + partOrder);
-	}
-
-	public void saveToHistory() {
-		if (notesHistoryIndex + 1 < notesHistory.size() && notesHistory.size() > 0) {
-			notesHistory = notesHistory.subList(0, notesHistoryIndex + 1);
-		}
-
-		notesHistory.add(mvea.getValues().copy());
-		notesHistoryIndex = notesHistory.size() - 1;
-		updateHistoryBox();
-	}
-
-	public void loadFromHistory(int index) {
-		if (notesHistoryIndex == index) {
-			return;
-		}
-		LG.i("Loading notes with index: " + index);
-		if (notesHistory.size() > 0 && index >= 0 && index < notesHistory.size()) {
-			mvea.setValues(notesHistory.get(index).copy());
-			notesHistoryIndex = index;
-			editHistoryBox.setSelectedIndex(index);
-			repaintMvea();
-		}
 	}
 
 	public PhraseNotes recomposePart(boolean isRandom) {
@@ -917,8 +750,8 @@ public class MidiEditPopup extends CloseablePopup {
 		PhraseNotes pn = MidiGenerator.gc.getPattern(generatedPat);
 		VibeComposerGUI.guiConfig.putPattern(generatedPat, pn);
 
-		mvea.currentMin = 110;
-		mvea.currentMax = 10;
+		mvea.setCurrentMin(110);
+		mvea.setCurrentMax(10);
 
 		if (oldPattern != null) {
 			sec.putPattern(part, partOrder, oldPattern);
@@ -930,7 +763,7 @@ public class MidiEditPopup extends CloseablePopup {
 			close();
 			return new PhraseNotes(Collections.singletonList(new Note("C4")));
 		} else {
-			setCustomValues(pn);
+			mvea.setCustomValues(pn);
 			//mg.fill
 			return getValues();
 		}
@@ -951,9 +784,9 @@ public class MidiEditPopup extends CloseablePopup {
 
 	public void updateHistoryBox() {
 		editHistoryBox.removeAllItems();
-		for (int i = 0; i < notesHistory.size(); i++) {
+		for (int i = 0; i < mvea.notesHistory.size(); i++) {
 			editHistoryBox.addItem(i + " ("
-					+ notesHistory.get(i).stream().filter(e -> e.getPitch() >= 0).count() + ")");
+					+ mvea.notesHistory.get(i).stream().filter(e -> e.getPitch() >= 0).count() + ")");
 		}
 		editHistoryBox.setSelectedIndex(editHistoryBox.getItemCount() - 1);
 	}

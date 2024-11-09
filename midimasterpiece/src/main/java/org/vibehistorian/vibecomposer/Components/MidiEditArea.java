@@ -8,11 +8,16 @@ import org.vibehistorian.vibecomposer.MidiGenerator;
 import org.vibehistorian.vibecomposer.MidiUtils;
 import org.vibehistorian.vibecomposer.OMNI;
 import org.vibehistorian.vibecomposer.Popups.MidiEditPopup;
+import org.vibehistorian.vibecomposer.Popups.TemporaryInfoPopup;
+import org.vibehistorian.vibecomposer.Popups.TextProcessingPopup;
 import org.vibehistorian.vibecomposer.Section;
 import org.vibehistorian.vibecomposer.VibeComposerGUI;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.InputEvent;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionListener;
@@ -39,8 +44,8 @@ public class MidiEditArea extends JComponent {
 	private static final long serialVersionUID = -2972572935738976623L;
 	public int currentMin = -10;
 	public int currentMax = 10;
-	public int rangeMin;
-	public int rangeMax;
+	public int rangeMin = -10;
+	public int rangeMax = 10;
 	PhraseNotes values = null;
 	public int part = 0;
 
@@ -81,12 +86,14 @@ public class MidiEditArea extends JComponent {
 	int noteDragMarginX = 5;
 
 	MidiEditPopup pop = null;
+	public int notesHistoryIndex = 0;
+	public List<PhraseNotes> notesHistory = new ArrayList<>();
 
 	public MidiEditArea(int minimum, int maximum, PhraseNotes vals) {
 		super();
+		setRange(minimum, maximum);
 		setCurrentMin(minimum);
 		setCurrentMax(maximum);
-		setRange(minimum, maximum);
 		values = vals;
 		resetBase();
 
@@ -184,18 +191,17 @@ public class MidiEditArea extends JComponent {
 						makeSelectedNotesCopy();
 					}
 				}
-				if (pop != null && saveToHistory
+				if (saveToHistory
 						&& (SwingUtilities.isLeftMouseButton(evt) ||
 							SwingUtilities.isRightMouseButton(evt) ||
 							SwingUtilities.isMiddleMouseButton(evt))) {
 					values.remakeNoteStartTimes(true);
-					pop.saveToHistory();
+					saveToHistory();
 				}
 
 				reset();
 				if (pop != null && SwingUtilities.isLeftMouseButton(evt)
 						&& MidiEditPopup.regenerateInPlaceChoice) {
-
 					pop.apply();
 					selectedNotes.clear();
 					selectedNotesCopy.clear();
@@ -228,6 +234,179 @@ public class MidiEditArea extends JComponent {
 			}
 
 		});
+	}
+
+	public void undo() {
+		loadFromHistory(notesHistoryIndex - 1);
+
+		if (pop != null && MidiEditPopup.regenerateInPlaceChoice) {
+			selectedNotes.clear();
+			selectedNotesCopy.clear();
+			VibeComposerGUI.vibeComposerGUI.regenerateInPlace();
+		}
+	}
+
+	public void redo() {
+		loadFromHistory(notesHistoryIndex + 1);
+	}
+
+	public void saveToHistory() {
+		if (notesHistoryIndex + 1 < notesHistory.size() && notesHistory.size() > 0) {
+			notesHistory = notesHistory.subList(0, notesHistoryIndex + 1);
+		}
+
+		notesHistory.add(getValues().copy());
+		notesHistoryIndex = notesHistory.size() - 1;
+		if (pop != null) {
+			pop.updateHistoryBox();
+		}
+	}
+
+	public void loadFromHistory(int index) {
+		if (notesHistoryIndex == index) {
+			return;
+		}
+		LG.i("Loading notes with index: " + index);
+		if (notesHistory.size() > 0 && index >= 0 && index < notesHistory.size()) {
+			setValues(notesHistory.get(index).copy());
+			notesHistoryIndex = index;
+			if (pop != null) {
+				pop.editHistoryBox.setSelectedIndex(index);
+				pop.repaintMvea();
+			}
+		}
+	}
+
+	public void deleteSelected() {
+		if (selectedNotes.size() > 0) {
+			selectedNotes.forEach(e -> {
+				if (e.getRv() < MidiGenerator.DBL_ERR) {
+					getValues().remove(e);
+				} else {
+					e.setPitch(Note.REST);
+				}
+			});
+			selectedNotes.clear();
+			selectedNotesCopy.clear();
+			reset();
+			saveToHistory();
+
+			if (MidiEditPopup.regenerateInPlaceChoice) {
+				VibeComposerGUI.vibeComposerGUI.regenerateInPlace();
+			}
+		}
+	}
+
+	public void transposeSelected() {
+		new TextProcessingPopup("Transpose amount", e -> {
+			if (selectedNotes == null || selectedNotes.isEmpty()) {
+				new TemporaryInfoPopup("No notes selected!", 1000);
+				return;
+			}
+			try {
+				int parsedInt = Integer.valueOf(e);
+				for (PhraseNote n : selectedNotes) {
+					// 0..127 midi value
+					n.setPitch(OMNI.clampMidi(n.getPitch() + parsedInt));
+				}
+				setCustomValues(getValues());
+
+				if (MidiEditPopup.regenerateInPlaceChoice) {
+					selectedNotes.clear();
+					selectedNotesCopy.clear();
+					VibeComposerGUI.vibeComposerGUI.regenerateInPlace();
+				}
+			} catch (Exception ex) {
+				new TemporaryInfoPopup("Invalid number entered!", 1500);
+			}
+		});
+	}
+
+	public void selectAll() {
+		selectedNotes.clear();
+		selectedNotes.addAll(getValues().stream().filter(e -> e.getPitch() >= 0)
+				.collect(Collectors.toList()));
+		makeSelectedNotesCopy();
+	}
+
+	public void addKeyboardControls(JPanel topControlPanel) {
+		Action undoAction = new AbstractAction() {
+			public void actionPerformed(ActionEvent e) {
+				undo();
+			}
+		};
+		Action redoAction = new AbstractAction() {
+			public void actionPerformed(ActionEvent e) {
+				redo();
+			}
+		};
+
+		Action deleteAction = new AbstractAction() {
+			public void actionPerformed(ActionEvent e) {
+				deleteSelected();
+			}
+		};
+		Action selectAllAction = new AbstractAction() {
+			public void actionPerformed(ActionEvent e) {
+				selectAll();
+			}
+		};
+		Action transposeSelectedAction = new AbstractAction() {
+			public void actionPerformed(ActionEvent e) {
+				transposeSelected();
+			}
+		};
+		topControlPanel.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+				.put(KeyStroke.getKeyStroke(KeyEvent.VK_Z, InputEvent.CTRL_DOWN_MASK), "undo");
+		topControlPanel.getActionMap().put("undo", undoAction);
+		topControlPanel.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+				.put(KeyStroke.getKeyStroke(KeyEvent.VK_Y, InputEvent.CTRL_DOWN_MASK), "redo");
+		topControlPanel.getActionMap().put("redo", redoAction);
+		topControlPanel.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+				.put(KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, 0), "delete");
+		topControlPanel.getActionMap().put("delete", deleteAction);
+		topControlPanel.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+				.put(KeyStroke.getKeyStroke(KeyEvent.VK_A, InputEvent.CTRL_DOWN_MASK), "selectAll");
+		topControlPanel.getActionMap().put("selectAll", selectAllAction);
+		topControlPanel.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(
+				KeyStroke.getKeyStroke(KeyEvent.VK_T, InputEvent.CTRL_DOWN_MASK),
+				"transposeSelected");
+		topControlPanel.getActionMap().put("transposeSelected", transposeSelectedAction);
+	}
+
+	public void setCustomValues(PhraseNotes values) {
+		setCustomValues(values, MidiEditPopup.baseMargin, MidiEditPopup.trackScope);
+	}
+
+	public void setCustomValues(PhraseNotes values, int baseMargin, int trackScope) {
+		if (values == null || values.isEmpty()) {
+			new TemporaryInfoPopup("Empty pattern!", 1000);
+			return;
+		}
+
+		int vmin = -1 * baseMargin * trackScope;
+		int vmax = baseMargin * trackScope;
+		if (!values.isEmpty()) {
+			vmin += values.stream().map(e -> e.getPitch()).filter(e -> e >= 0).mapToInt(e -> e)
+					.min().getAsInt();
+			vmax += values.stream().map(e -> e.getPitch()).filter(e -> e >= 0).mapToInt(e -> e)
+					.max().getAsInt();
+		}
+		setCurrentMin(Math.min(currentMin, vmin));
+		setCurrentMax(Math.max(currentMax, vmax));
+
+		if (pop != null) {
+			part = pop.part;
+		}
+		marginX = (part == 4) ? 160 : 80;
+		setValues(values);
+		saveToHistory();
+
+		if (pop != null) {
+			pop.repaintMvea();
+		} else {
+			setAndRepaint();
+		}
 	}
 
 	public double getTimeGrid() {
@@ -1396,16 +1575,18 @@ public class MidiEditArea extends JComponent {
 	}
 
 	public void setCurrentMin(int currentMin) {
-		this.currentMin = currentMin;
+		this.currentMin = Math.max(rangeMin, currentMin);
 	}
 
 	public void setCurrentMax(int currentMax) {
-		this.currentMax = currentMax;
+		this.currentMax = Math.min(rangeMax, currentMax);
 	}
 
 	public void setRange(int min, int max) {
 		rangeMin = min;
 		rangeMax = max;
+		setCurrentMin(currentMin);
+		setCurrentMax(currentMax);
 	}
 
 }
