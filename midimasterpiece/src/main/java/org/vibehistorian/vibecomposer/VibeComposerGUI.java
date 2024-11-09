@@ -6429,7 +6429,7 @@ public class VibeComposerGUI extends JFrame
 			int explored = 0;
 			int exploredSize = 0;
 			boolean endDisplayed = false;
-			while (current < slider.getMaximum()) {
+			while (current < slider.getMaximum() && !endDisplayed) {
 				Section sec = null;
 
 				int sizeCounter = exploredSize;

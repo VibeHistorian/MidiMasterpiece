@@ -46,7 +46,7 @@ public class MidiEditArea extends JComponent {
 	public int currentMax = 10;
 	public int rangeMin = -10;
 	public int rangeMax = 10;
-	PhraseNotes values = null;
+	PhraseNotes values = new PhraseNotes();
 	public int part = 0;
 
 	public int marginX = 80;
@@ -390,9 +390,9 @@ public class MidiEditArea extends JComponent {
 		int vmax = baseMargin * trackScope;
 		if (!values.isEmpty()) {
 			vmin += values.stream().map(e -> e.getPitch()).filter(e -> e >= 0).mapToInt(e -> e)
-					.min().getAsInt();
+					.min().orElse(0);
 			vmax += values.stream().map(e -> e.getPitch()).filter(e -> e >= 0).mapToInt(e -> e)
-					.max().getAsInt();
+					.max().orElse(0);
 		}
 		setCurrentMin(Math.min(currentMin, vmin));
 		setCurrentMax(Math.max(currentMax, vmax));
@@ -1403,6 +1403,9 @@ public class MidiEditArea extends JComponent {
 
 	protected PhraseNote getDraggedNote(Point xy) {
 		int yValue = getPitchFromPosition(xy.y);
+		if (values.isEmpty()) {
+			return null;
+		}
 		List<PhraseNote> possibleNotes = values.stream().filter(e -> yValue == e.getPitch())
 				.collect(Collectors.toList());
 		if (possibleNotes.isEmpty()) {

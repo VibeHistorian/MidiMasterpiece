@@ -335,8 +335,12 @@ public class ShowPanelBig extends JPanel {
 		int lastUsableSliderTime = VibeComposerGUI.sliderMeasureStartTimes
 				.get(VibeComposerGUI.sliderMeasureStartTimes.size() - 1);
 
+		int sliderExtension = (VibeComposerGUI.sliderExtended < 0)
+				? lastUsableSliderTime - VibeComposerGUI.slider.getMaximum()
+				: VibeComposerGUI.sliderExtended;
+
 		double correctionPercentage = 1.0
-				- (VibeComposerGUI.sliderExtended / (double) lastUsableSliderTime);
+				- (sliderExtension / (double) lastUsableSliderTime);
 
 		double usableEnd = correctionPercentage * (maxEndTime * beatWidth);
 					/*LG.d("XY: " + xy.toString() + ", start: " + usableStart

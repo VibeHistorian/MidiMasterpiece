@@ -40,10 +40,10 @@ public class PhraseNotes extends ArrayList<PhraseNote> implements Cloneable {
 	}
 
 	public static PhraseNotes fromPN(List<PhraseNote> notes) {
-		if (notes == null) {
-			 return null;
-		}
 		PhraseNotes pn = new PhraseNotes();
+		if (notes == null) {
+			 return pn;
+		}
 		pn.addAll(notes.stream().map(e -> e.clone()).collect(Collectors.toList()));
 		return pn.copy();
 	}

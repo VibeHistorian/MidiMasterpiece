@@ -48,6 +48,8 @@ import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static org.vibehistorian.vibecomposer.MidiGenerator.DBL_ERR;
+
 public class MidiEditPopup extends CloseablePopup {
 
 	public static int highlightModeChoice = 3;
@@ -267,9 +269,9 @@ public class MidiEditPopup extends CloseablePopup {
 			PhraseNotes pn = new PhraseNotes(e);
 			double length = pn.stream().map(f -> f.getRv()).mapToDouble(f -> f).sum();
 			LG.i("Dropped MIDI Length: " + length);
-			if (length > mvea.sectionLength + MidiGenerator.DBL_ERR) {
+			if (length > mvea.sectionLength + DBL_ERR) {
 				return null;
-			} else if (length < mvea.sectionLength - MidiGenerator.DBL_ERR) {
+			} else if (length < mvea.sectionLength - DBL_ERR) {
 				PhraseNote lastNote = pn.get(pn.size() - 1);
 				lastNote.setRv(lastNote.getRv() + mvea.sectionLength - length);
 			}
@@ -505,6 +507,8 @@ public class MidiEditPopup extends CloseablePopup {
 		if (pn == null || pn.isEmpty()) {
 			return;
 		}
+		part = patternPartBox.getSelectedIndex();
+		partOrder = patternPartOrderBox.getSelectedItem();
 
 		if (overwrite) {
 			mvea.setCustomValues(pn);
@@ -771,8 +775,14 @@ public class MidiEditPopup extends CloseablePopup {
 
 	public void repaintMvea() {
 		mvea.setAndRepaint();
-		mvea.sectionLength = mvea.getValues().stream().map(e -> e.getRv())
-				.mapToDouble(e -> e).sum();
+		if (part == 2) {
+			mvea.getValues().remakeNoteStartTimes(true);
+			mvea.sectionLength = Math.ceil(mvea.getValues().getIterationOrder().get(mvea.getValues().size()-1).getEndTime() - DBL_ERR);
+		} else {
+			mvea.sectionLength = mvea.getValues().stream().map(e -> e.getRv())
+					.mapToDouble(e -> e).sum();
+		}
+
 		if (sec != null) {
 			UsedPattern pat = sec.getPattern(part, partOrder);
 			String patName = (pat != null) ? pat.toString() : "<No pattern>";

@@ -1009,7 +1009,7 @@ public class MidiGenerator implements JMC {
 				if (sizeCounter > 0) {
 					// some valid note exists
 					customUserDurationsByBlock.put(blockCounter, customDurationsBlock);
-				} else {
+				} else if (blockCounter > 0 && customUserDurationsByBlock.get(blockCounter-1) != null) {
 					// only pauses exist
 					customUserDurationsByBlock.get(blockCounter-1).addAll(customDurationsBlock);
 				}
