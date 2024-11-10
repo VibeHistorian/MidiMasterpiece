@@ -6027,9 +6027,9 @@ public class VibeComposerGUI extends JFrame
 			MidiGenerator.COLLAPSE_DRUM_TRACKS = combineDrumTracks.isSelected();
 			MidiGenerator.recalculateDurations(stretchMidi.getInt());
 			MidiGenerator.GLOBAL_DURATION_MULTIPLIER = globalNoteLengthMultiplier.getInt() / 1000.0;
-			MidiGenerator.RANDOMIZE_TARGET_NOTES = !regenerate
+			MelodyGenerator.RANDOMIZE_TARGET_NOTES = !regenerate
 					&& melodyTargetNotesRandomizeOnCompose.isSelected();
-			MidiGenerator.TARGET_NOTES = (melody1ForcePatterns.isSelected()
+			MelodyGenerator.TARGET_NOTES = (melody1ForcePatterns.isSelected()
 					&& !melodyPanels.isEmpty()
 					&& !melodyPanels.get(0).getNoteTargetsButton().isEnabled())
 							? melodyPanels.stream()
@@ -6073,9 +6073,9 @@ public class VibeComposerGUI extends JFrame
 			}
 
 			if (MelodyMidiDropPane.userMelody != null && useUserMelody.isSelected()) {
-				MidiGenerator.userMelody = MelodyMidiDropPane.userMelody;
+				MelodyGenerator.userMelody = MelodyMidiDropPane.userMelody;
 			} else {
-				MidiGenerator.userMelody = null;
+				MelodyGenerator.userMelody = null;
 			}
 
 			// to include it in the XML when saving, but not when generating
@@ -6304,10 +6304,10 @@ public class VibeComposerGUI extends JFrame
 		}
 
 		if (!regenerate && melodyTargetNotesRandomizeOnCompose.isSelected()
-				&& MidiGenerator.TARGET_NOTES != null) {
+				&& MelodyGenerator.TARGET_NOTES != null) {
 			for (int i = 0; i < melodyPanels.size(); i++) {
 				int mpOrder = melodyPanels.get(i).getPanelOrder();
-				List<Integer> notes = MidiGenerator.TARGET_NOTES.get(mpOrder);
+				List<Integer> notes = MelodyGenerator.TARGET_NOTES.get(mpOrder);
 				if (notes != null) {
 					melodyPanels.get(i).setChordNoteChoices(notes);
 					guiConfig.getMelodyParts().get(i).setChordNoteChoices(notes);
