@@ -4348,7 +4348,7 @@ public class MidiGenerator implements JMC {
 
 		Vector<Note> skeletonNotes = null;
 		if (userMelody != null) {
-			skeletonNotes = userMelody.copy().getNoteList();
+			skeletonNotes = (Vector<Note>) userMelody.copy().getNoteList();
 		} else {
 			if (gc.isMelodyLegacyMode()) {
 				LG.i("OLD MELODY ALGO");
