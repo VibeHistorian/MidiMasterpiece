@@ -11,6 +11,7 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionListener;
+import java.util.function.Consumer;
 
 public class VeloRect extends JComponent {
 
@@ -33,6 +34,8 @@ public class VeloRect extends JComponent {
 	public static Color highlightColorLight = OMNI.alphen(new Color(255, 100, 100), 200);
 	private VisualPatternPanel visualParent = null;
 	private int visualParentOrderIndex = -1;
+
+	public Consumer<Integer> updatedValueListener;
 
 	public static VeloRect percent(int currentVal) {
 		return new VeloRect(0, 100, currentVal);
@@ -141,6 +144,9 @@ public class VeloRect extends JComponent {
 		this.val = value;
 		if (visualParent != null) {
 			visualParent.getTrueVelocities().set(visualParentOrderIndex, value);
+		}
+		if (updatedValueListener != null) {
+			updatedValueListener.accept(val);
 		}
 	}
 

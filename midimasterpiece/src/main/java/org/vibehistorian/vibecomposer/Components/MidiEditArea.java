@@ -1,5 +1,6 @@
 package org.vibehistorian.vibecomposer.Components;
 
+import jm.constants.Pitches;
 import jm.music.data.Note;
 import org.vibehistorian.vibecomposer.Helpers.PhraseNote;
 import org.vibehistorian.vibecomposer.Helpers.PhraseNotes;
@@ -548,6 +549,7 @@ public class MidiEditArea extends JComponent {
 					}*/
 
 					LG.d("Inserting new note..");
+					yValue = OMNI.clamp(yValue, rangeMin, rangeMax);
 					int closestNormalized = MidiUtils.getClosestFromList(MidiUtils.MAJ_SCALE,
 							yValue % 12);
 					insertedPn = new PhraseNote(pop != null && pop.isSnapPitch()
@@ -723,7 +725,6 @@ public class MidiEditArea extends JComponent {
 				VibeComposerGUI.playNote(pn.getPitch(), durationMs, pn.getDynamic(), pop.part,
 						pop.partOrder, pop.getSec(), false);
 			}
-
 		}
 
 	}
@@ -897,16 +898,21 @@ public class MidiEditArea extends JComponent {
 						pitch = MidiUtils.getClosestFromList(MidiUtils.MAJ_SCALE, pitch % 12)
 								+ MidiUtils.octavePitch(pitch);
 					}
+					pitch = OMNI.clamp(pitch, rangeMin, rangeMax);
 					boolean playNote = pitch != draggedNote.getPitch();
 					if (draggingAny(DM.MULTIPLE)) {
 						int pitchChange = pitch - draggedNoteCopy.getPitch();
 						for (int i = 0; i < selectedNotesCopy.size(); i++) {
 							int newPitchAbsolute = selectedNotesCopy.get(i).getPitch()
 									+ pitchChange;
-							int newPitch = MidiUtils.getClosestFromList(MidiUtils.MAJ_SCALE,
-									newPitchAbsolute % 12)
-									+ MidiUtils.octavePitch(newPitchAbsolute);
-							selectedNotes.get(i).setPitch(OMNI.clampPitch(newPitch));
+							if (pop != null && pop.isSnapPitch()) {
+								int newPitch = MidiUtils.getClosestFromList(MidiUtils.MAJ_SCALE,
+										newPitchAbsolute % 12)
+										+ MidiUtils.octavePitch(newPitchAbsolute);
+								selectedNotes.get(i).setPitch(OMNI.clampPitch(newPitch));
+							} else {
+								selectedNotes.get(i).setPitch(OMNI.clampPitch(newPitchAbsolute));
+							}
 						}
 					} else {
 						draggedNote.setPitch(OMNI.clampPitch(pitch));
@@ -946,9 +952,10 @@ public class MidiEditArea extends JComponent {
 	}
 
 	void setVal(int pos, int pitch) {
-		if (pitch == Note.REST && values.get(pos).getRv() < DBL_ERR) {
+		if (pitch == Pitches.REST && values.get(pos).getRv() < DBL_ERR) {
 			values.remove(pos);
 		} else {
+			pitch = OMNI.clamp(pitch, rangeMin, rangeMax);
 			if (pop != null && pop.isSnapPitch()) {
 				int closestNormalized = MidiUtils.getClosestFromList(MidiUtils.MAJ_SCALE,
 						pitch % 12);
@@ -975,7 +982,7 @@ public class MidiEditArea extends JComponent {
 			int w = getWidth();
 			int h = getHeight();
 			int numValues = values.size();
-			int rowDivisors = currentMax - currentMin;
+			int rowDivisors = 1 + currentMax - currentMin;
 			int usableHeight = h - marginY * 2;
 			double rowHeight = usableHeight / (double) rowDivisors;
 			// clear screen
@@ -1204,7 +1211,7 @@ public class MidiEditArea extends JComponent {
 						g.setColor(OMNI.alphen(VibeComposerGUI.uiColor(), 50));
 						int drawXNext = bottomLeft.x
 								+ (int) (quarterNoteLength * (nextPn.getStartTime() + getPhraseMarginX()));
-						int drawYNext = bottomLeft.y - (int) (rowHeight * (nextPn.getPitch() + 1 - currentMin));
+						int drawYNext = bottomLeft.y - (int) (rowHeight * (nextPn.getPitch() + 1 - currentMin)) + (int)(rowHeight/2);
 						g.drawLine(drawX, drawY, drawXNext, drawYNext);
 					}
 				}
@@ -1215,10 +1222,16 @@ public class MidiEditArea extends JComponent {
 				g.setColor(OMNI.alphen(VibeComposerGUI.uiColor(), 140));
 				g.drawLine(drawX, drawY - 5, drawX, drawY + 5);
 				g.drawLine(drawX + width, drawY - 5, drawX + width, drawY + 5);
-				String drawnString = (width > 20 || currentlyHighlighted)
-						? (pitchForText + "(" + MidiUtils.pitchToString(pitchForText) + ") :"
-								+ pn.getDynamic())
-						: String.valueOf(pitchForText);
+
+				String drawnString;
+				if (drawNoteStrings) {
+					drawnString = (width > 20 || currentlyHighlighted)
+							? (pitchForText + "(" + MidiUtils.pitchToString(pitchForText) + ") :"
+							+ pn.getDynamic())
+							: String.valueOf(pitchForText);
+				} else {
+					drawnString = String.valueOf(pn.getDynamic());
+				}
 				if (currentlyHighlighted) {
 					g.setColor(OMNI.alphen(
 							OMNI.mixColor(VibeComposerGUI.uiColor(),
@@ -1437,7 +1450,7 @@ public class MidiEditArea extends JComponent {
 	}
 
 	private int getPitchFromPosition(int y) {
-		int rowDivisors = currentMax - currentMin;
+		int rowDivisors = 1 + currentMax - currentMin;
 		int usableHeight = getHeight() - marginY * 2;
 		double rowHeight = usableHeight / (double) rowDivisors;
 
@@ -1510,7 +1523,7 @@ public class MidiEditArea extends JComponent {
 			boolean getClosestOriginal) {
 		int w = getWidth();
 		int h = getHeight();
-		int rowDivisors = currentMax - currentMin;
+		int rowDivisors = 1 + currentMax - currentMin;
 		int usableHeight = h - marginY * 2;
 		double rowHeight = usableHeight / (double) rowDivisors;
 

@@ -27,10 +27,14 @@ import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class MelodyPanel extends InstPanel {
 
 	private static final long serialVersionUID = -7861296600641561431L;
+
+	public static final int CUSTOM_DURATIONS_LIMIT = 10;
 
 	private JCheckBox fillPauses = new CustomCheckBox("<html>Fill<br>Pauses</html>", false);
 	private RandomIntegerListButton noteTargets = new RandomIntegerListButton("0,2,2,4", this);
@@ -48,10 +52,11 @@ public class MelodyPanel extends InstPanel {
 	private JCheckBox patternFlexible = new CustomCheckBox("Flex", true);
 
 	private PhraseNotes customDurationValues = new PhraseNotes();
+	private List<Integer> customDurationChances = new ArrayList<>(IntStream.iterate(50, e -> e).limit(CUSTOM_DURATIONS_LIMIT).boxed().collect(Collectors.toList()));
 
 	public void initComponents(ActionListener l) {
 
-		ScrollComboBox.addAll(new Integer[] { 1, 2, 3, 4, 5, 6, 7, 8, 11, 12, 13, 14, 15 },
+		ScrollComboBox.addAll(new Integer[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15 },
 				midiChannel);
 		midiChannel.setVal(1);
 		instPool = POOL.MELODY;
@@ -75,7 +80,7 @@ public class MelodyPanel extends InstPanel {
 			@Override
 			public void mousePressed(MouseEvent evt) {
 				LG.i(customDurationValues);
-				new CustomDurationsEditPopup(customDurationValues, MelodyPanel.this);
+				new CustomDurationsEditPopup(customDurationValues, customDurationChances, MelodyPanel.this);
 			}
 		});
 		speed.getKnobLockPane().add(bpo);
@@ -227,6 +232,7 @@ public class MelodyPanel extends InstPanel {
 		part.setPatternFlexible(getPatternFlexible());
 
 		part.setCustomDurationNotes(getCustomDurationNotes());
+		part.setCustomDurationChances(getCustomDurationChances());
 
 		return part;
 	}
@@ -252,6 +258,7 @@ public class MelodyPanel extends InstPanel {
 		setPatternFlexible(part.isPatternFlexible());
 
 		setCustomDurationNotes(part.getCustomDurationNotes());
+		setCustomDurationChances(part.getCustomDurationChances());
 	}
 
 	@Override
@@ -413,5 +420,12 @@ public class MelodyPanel extends InstPanel {
 		this.customDurationValues = PhraseNotes.fromPN(customDurationNotes);
 	}
 
+	public List<Integer> getCustomDurationChances() {
+		return customDurationChances;
+	}
+
+	public void setCustomDurationChances(List<Integer> customDurationChances) {
+		this.customDurationChances = customDurationChances;
+	}
 }
 

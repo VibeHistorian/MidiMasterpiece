@@ -1047,7 +1047,7 @@ public class MelodyGenerator {
                     : (chordIndex % customDurationNotesMap.size());
             Random customDurationsGenerator = new Random(melodyBlockGeneratorSeed + 12 + indexValue);
             if (gc.isMelodyCustomDurationsRandomWeighting()) {
-                List<Integer> firstDurationWeights = customDurationNotesMap.stream().map(e -> e.get(0).getDynamic()).collect(Collectors.toList());
+                List<Integer> firstDurationWeights = customDurationNotesMap.stream().map(e -> mp.getCustomDurationChances().get(e.get(0).getPitch())).collect(Collectors.toList());
                 int[] weights = MelodyUtils.normalizedCumulativeWeights(firstDurationWeights.toArray(new Integer[]{}));
                 indexValue = OMNI.getWeightedValue(IntStream.range(0, customDurationNotesMap.size()).boxed().toArray(Integer[]::new),
                         customDurationsGenerator.nextInt(100), weights);
@@ -1113,8 +1113,6 @@ public class MelodyGenerator {
             userCustomDurations.remakeNoteStartTimes(true);
 
             // maybe ignore emphasizeKey if cust. durations enabled?
-
-            // TODO: move melody generation to separate class, separate methods
 
             // ?? apply roughlyEqual filter to weighting, so that only matching sums are considered in the first place
             //  (= support for different settings of different chord durations)
@@ -1718,7 +1716,7 @@ public class MelodyGenerator {
     }
     private MelodyBlock convertMelodyBlockWithCustomMap(MelodyBlock mb, Map<Integer, List<PhraseNote>> customBlockDurationsMap, int blockIndex) {
         if (customBlockDurationsMap == null || customBlockDurationsMap.isEmpty() || customBlockDurationsMap.get(blockIndex) == null) {
-            LG.i("No block to be converted: " + blockIndex);
+            LG.d("No block to be converted: " + blockIndex);
             return mb;
         }
         MelodyBlock newMb = new MelodyBlock(customBlockDurationsMap.get(blockIndex).stream().map(e -> e.getDynamic() > 0 ? e.getPitch() : Pitches.REST).collect(Collectors.toList()),

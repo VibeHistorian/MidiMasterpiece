@@ -26,6 +26,7 @@ public class MelodyPart extends InstPart {
 	private boolean patternFlexible = false;
 
 	private PhraseNotes customDurationNotes = null;
+	private List<Integer> customDurationChances = null;
 
 	public MelodyPart() {
 		partNum = 0;
@@ -153,5 +154,13 @@ public class MelodyPart extends InstPart {
 
 	public void setCustomDurationNotes(PhraseNotes customDurationNotes) {
 		this.customDurationNotes = customDurationNotes;
+	}
+
+	public List<Integer> getCustomDurationChances() {
+		return customDurationChances;
+	}
+
+	public void setCustomDurationChances(List<Integer> customDurationChances) {
+		this.customDurationChances = customDurationChances;
 	}
 }
