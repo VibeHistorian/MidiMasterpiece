@@ -446,6 +446,11 @@ public class MelodyGenerator {
 
                     }
 
+                    List<PhraseNote> customBlock = (customUserDurationsByBlock != null && customUserDurationsByBlock.get(blockIndex) != null)
+                            ? customUserDurationsByBlock.get(blockIndex)
+                            : null;
+
+
                     List<Double> sortedDurs = new ArrayList<>(mb.durations);
                     if (existingPattern == null) {
                         if (gc.isMelodyEmphasizeKey()) {
@@ -480,9 +485,10 @@ public class MelodyGenerator {
                                 existingPattern.getRight().get(blockIndex).durations);
                     }
 
-                    MelodyBlock convertedMb = convertMelodyBlockWithCustomMap(mb, customUserDurationsByBlock, blockIndex);
-                    boolean converted = convertedMb != mb;
-                    mb = convertedMb;
+                    if (customBlock != null) {
+                        mb = convertCustomMelodyBlock(mb, customBlock);
+                    }
+                    boolean converted = customBlock != null;
 
                     //LG.d(StringUtils.join(mb.durations, ","));
                     //LG.d("After: " + StringUtils.join(sortedDurs, ","));
@@ -1112,10 +1118,6 @@ public class MelodyGenerator {
 
             userCustomDurations.remakeNoteStartTimes(true);
 
-            // maybe ignore emphasizeKey if cust. durations enabled?
-
-            // ?? apply roughlyEqual filter to weighting, so that only matching sums are considered in the first place
-            //  (= support for different settings of different chord durations)
             List<PhraseNote> customDurationsBlock = new ArrayList<>();
             int blockCounter = 0;
             int sizeCounter = 0;
@@ -1714,13 +1716,12 @@ public class MelodyGenerator {
             }
         }
     }
-    private MelodyBlock convertMelodyBlockWithCustomMap(MelodyBlock mb, Map<Integer, List<PhraseNote>> customBlockDurationsMap, int blockIndex) {
-        if (customBlockDurationsMap == null || customBlockDurationsMap.isEmpty() || customBlockDurationsMap.get(blockIndex) == null) {
-            LG.d("No block to be converted: " + blockIndex);
-            return mb;
-        }
-        MelodyBlock newMb = new MelodyBlock(customBlockDurationsMap.get(blockIndex).stream().map(e -> e.getDynamic() > 0 ? e.getPitch() : Pitches.REST).collect(Collectors.toList()),
-                customBlockDurationsMap.get(blockIndex).stream().map(e -> e.getDuration()).collect(Collectors.toList()), false);
+    private MelodyBlock convertCustomMelodyBlock(MelodyBlock mb, List<PhraseNote> customBlock) {
+        // TODO: dynamic of skeleton is not used at all during skeleton conversion - e.g. embellished notes custom dynamic not used
+        // TODO: use custom note dynamic for actual notes? - enabled via extra option
+
+        MelodyBlock newMb = new MelodyBlock(customBlock.stream().map(e -> e.getDynamic() > 0 ? e.getPitch() : Pitches.REST).collect(Collectors.toList()),
+                customBlock.stream().map(e -> e.getDuration()).collect(Collectors.toList()), false);
         int counter = 0;
         for (int i = 0; i < mb.notes.size(); i++) {
             for (int j = counter; j < newMb.notes.size(); j++) {
