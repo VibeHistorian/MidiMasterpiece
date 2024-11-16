@@ -6193,6 +6193,9 @@ public class VibeComposerGUI extends JFrame
 		if (regenerate && randomMelodyOnRegenerate.isSelected() && !melodyPanels.isEmpty()) {
 			if (melodyPatternRandomizeOnCompose.isSelected()) {
 				melodyPanels.forEach(e -> {
+					if (e.getLockInst() == true) {
+						return;
+					}
 					e.setMelodyPatternOffsets(
 							MelodyUtils.getRandomMelodyPattern(e.getAlternatingRhythmChance(),
 									e.getPanelOrder() + (e.getPatternSeed() == 0 ? lastRandomSeed
@@ -6201,6 +6204,9 @@ public class VibeComposerGUI extends JFrame
 			}
 			if (melodyTargetNotesRandomizeOnCompose.isSelected()) {
 				melodyPanels.forEach(e -> {
+					if (e.getLockInst() == true) {
+						return;
+					}
 					e.setChordNoteChoices(e.getNoteTargetsButton().getRandGenerator().apply(e
 							.getPanelOrder()
 							+ (e.getPatternSeed() == 0 ? lastRandomSeed : e.getPatternSeed())));
@@ -6218,10 +6224,15 @@ public class VibeComposerGUI extends JFrame
 								: firstMp.getPatternSeed()));
 				firstMp.setMelodyPatternOffsets(pat);
 			} else {
-				melodyPanels.forEach(e -> e.setMelodyPatternOffsets(
-						MelodyUtils.getRandomMelodyPattern(e.getAlternatingRhythmChance(),
-								e.getPanelOrder() + (e.getPatternSeed() == 0 ? lastRandomSeed
-										: e.getPatternSeed()))));
+				melodyPanels.forEach(e -> {
+					if (e.getLockInst() == true) {
+						return;
+					}
+					e.setMelodyPatternOffsets(
+							MelodyUtils.getRandomMelodyPattern(e.getAlternatingRhythmChance(),
+									e.getPanelOrder() + (e.getPatternSeed() == 0 ? lastRandomSeed
+											: e.getPatternSeed())));
+				});
 			}
 		}
 
@@ -6738,11 +6749,19 @@ public class VibeComposerGUI extends JFrame
 		affectedPanels.forEach(e -> e.setVisible(false));
 		if (!randomMelodySameSeed.isSelected()) {
 			affectedPanels.forEach(e -> {
+				if (e.getLockInst() == true) {
+					return;
+				}
 				int seed = rand.nextInt();
 				e.setPatternSeed(seed);
 			});
 		} else {
-			affectedPanels.forEach(e -> e.setPatternSeed(melodySeed));
+			affectedPanels.forEach(e -> {
+				if (e.getLockInst() == true) {
+					return;
+				}
+				e.setPatternSeed(melodySeed);
+			});
 		}
 		affectedPanels.forEach(e -> e.setVisible(true));
 	}

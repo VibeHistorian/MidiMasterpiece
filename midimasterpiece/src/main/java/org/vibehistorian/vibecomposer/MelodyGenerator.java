@@ -149,7 +149,8 @@ public class MelodyGenerator {
             TARGET_NOTES = new HashMap<>();
         }
         if (RANDOMIZE_TARGET_NOTES) {
-            if (gc.getActualArrangement().getSections().indexOf(sec) < 1) {
+            if (gc.getActualArrangement().getSections().indexOf(sec) < 1
+                    || TARGET_NOTES.get(mp.getOrder()) == null) {
                 int targetNoteSeed = VibeComposerGUI.vibeComposerGUI.melody1ForcePatterns.isSelected()
                         ? (seed + 1)
                         : (seed + mp.getOrder());

@@ -291,6 +291,9 @@ public class MelodyPanel extends InstPanel {
 	}
 
 	public void overridePatterns(MelodyPanel mp1) {
+		if (getLockInst() == true) {
+			return;
+		}
 		noteTargets.setValue(mp1.noteTargets.getValue());
 		patternStructure.setValue(mp1.patternStructure.getValue());
 		maxBlockChange.setInt(mp1.maxBlockChange.getInt());
