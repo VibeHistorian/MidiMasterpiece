@@ -348,10 +348,7 @@ public class MidiGenerator implements JMC {
 		}
 		// fix short notes at the end not going to next chord
 		if (durCounter > DBL_ERR) {
-			chordCounter = (chordCounter + 1) % progressionDurations.size();
 			chordSeparators.add(notes.size() - 1);
-			durCounter = 0.0;
-			currentChordDur = progressionDurations.get(chordCounter);
 		}
 		int chordSepIndex = 0;
 		Note swungNote = null;
@@ -413,8 +410,8 @@ public class MidiGenerator implements JMC {
 						double suitableDur = latestSuitableNote.getRhythmValue();
 						if (swungNote == null) {
 							latestSuitableNote.setRhythmValue(suitableDur + swingAdjust);
-							latestSuitableNote.setDuration(
-									(suitableDur + swingAdjust) * GLOBAL_DURATION_MULTIPLIER);
+							double newDuration = Math.max(Durations.SIXTEENTH_NOTE / 2, (suitableDur + swingAdjust));
+							latestSuitableNote.setDuration(newDuration * GLOBAL_DURATION_MULTIPLIER);
 							swingAdjust *= -1;
 							swungNote = latestSuitableNote;
 							latestSuitableNote = null;
@@ -422,8 +419,8 @@ public class MidiGenerator implements JMC {
 								LG.d("Processed 1st swing!");
 						} else {
 							latestSuitableNote.setRhythmValue(suitableDur + swingAdjust);
-							latestSuitableNote.setDuration(
-									(suitableDur + swingAdjust) * GLOBAL_DURATION_MULTIPLIER);
+							double newDuration = Math.max(Durations.SIXTEENTH_NOTE / 2, (suitableDur + swingAdjust));
+							latestSuitableNote.setDuration(newDuration * GLOBAL_DURATION_MULTIPLIER);
 							swingAdjust *= -1;
 							swungNote = null;
 							latestSuitableNote = null;
@@ -434,8 +431,8 @@ public class MidiGenerator implements JMC {
 						if (swungNote != null) {
 							double swungDur = swungNote.getRhythmValue();
 							swungNote.setRhythmValue(swungDur + swingAdjust);
-							swungNote.setDuration(
-									(swungDur + swingAdjust) * GLOBAL_DURATION_MULTIPLIER);
+							double newDuration = Math.max(Durations.SIXTEENTH_NOTE / 2, (swungDur + swingAdjust));
+							swungNote.setDuration(newDuration * GLOBAL_DURATION_MULTIPLIER);
 							swingAdjust *= -1;
 							swungNote = null;
 							latestSuitableNote = null;
@@ -460,10 +457,8 @@ public class MidiGenerator implements JMC {
 		if (swungNote != null) {
 			double swungDur = swungNote.getRhythmValue();
 			swungNote.setRhythmValue(swungDur + swingAdjust);
-			swungNote.setDuration((swungDur + swingAdjust) * GLOBAL_DURATION_MULTIPLIER);
-			swingAdjust *= -1;
-			swungNote = null;
-			latestSuitableNote = null;
+			double newDuration = Math.max(Durations.SIXTEENTH_NOTE / 2, (swungDur + swingAdjust));
+			swungNote.setDuration(newDuration * GLOBAL_DURATION_MULTIPLIER);
 			if (logSwing)
 				LG.d("Unswung swung note!");
 		}
@@ -473,7 +468,6 @@ public class MidiGenerator implements JMC {
 			currentChordDur = progressionDurations.get(0);
 			durCounter = 0.0;
 			chordCounter = 0;
-			durationBuckets = new ArrayList<>();
 			for (int i = 0; i < notes.size(); i++) {
 				durCounter += notes.get(i).getRhythmValue();
 				if (durCounter - DBL_ERR > currentChordDur) {
