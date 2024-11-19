@@ -1113,6 +1113,7 @@ public class MelodyGenerator {
                     int index = userCustomDurations.indexOf(currentPn);
                     userCustomDurations.add(index + 1, new PhraseNote(pitchValue, 0, 0.0,
                             target - currentPn.getEndTime(), currentPn.getOffset() + currentPn.getDuration()));
+                    userCustomDurations.remakeNoteStartTimes(true);
                 }
                 target = currentPn.getStartTime();
             }
