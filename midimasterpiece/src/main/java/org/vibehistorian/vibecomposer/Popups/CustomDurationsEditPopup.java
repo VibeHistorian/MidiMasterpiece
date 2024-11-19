@@ -50,6 +50,7 @@ public class CustomDurationsEditPopup extends CloseablePopup {
         cdMveaPanel.add(patternChancePanelWrapper);
         cdMveaPanel.add(cdMvea);
         cdMvea.addKeyboardControls(cdMveaPanel);
+        cdMvea.setAndRepaint();
         frame.add(cdMveaPanel);
         frame.pack();
         frame.setVisible(true);
