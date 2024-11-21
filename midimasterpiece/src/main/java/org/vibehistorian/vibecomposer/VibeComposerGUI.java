@@ -604,8 +604,6 @@ public class VibeComposerGUI extends JFrame
 	public static List<String> currentChordsInternal = new ArrayList<>();
 	JLabel messageLabel;
 	ScrollComboBox<String> presetLoadBox;
-	ScrollComboBox<String> drumPartPresetBox;
-	JCheckBox drumPartPresetAddCheckbox;
 	VeloRect globalVolSlider;
 	VeloRect globalReverbSlider;
 	VeloRect globalChorusSlider;
@@ -1983,6 +1981,7 @@ public class VibeComposerGUI extends JFrame
 		melodySettingsExtraPanelShape.add(melodySingleNoteExceptions);
 		melodySettingsExtraPanelShape.add(melodyFillPausesPerChord);
 		melodySettingsExtraPanelShape.add(melodyLegacyMode);
+		melodySettingsExtraPanelShape.add(new PartManagerPanel(0));
 		return melodySettingsExtraPanelShape;
 	}
 
@@ -2177,7 +2176,8 @@ public class VibeComposerGUI extends JFrame
 
 		JPanel bassSettingsAdvancedPanel = new JPanel();
 		bassSettingsAdvancedPanel.add(new JLabel("BASS SETTINGS+"));
-		//bassSettingsAdvancedPanel.setBorder(BorderFactory.createBevelBorder(BevelBorder.RAISED));
+		bassSettingsAdvancedPanel.add(new PartManagerPanel(1));
+		bassSettingsAdvancedPanel.setBorder(BorderFactory.createBevelBorder(BevelBorder.RAISED));
 		bassSettingsAdvancedPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
 		bassSettingsAdvancedPanel.setMaximumSize(new Dimension(1800, 50));
 
@@ -2197,11 +2197,9 @@ public class VibeComposerGUI extends JFrame
 		borderPanel.setLayout(new DynamicGridLayout(0, 1));
 		borderPanel.setBorder(new BevelBorder(BevelBorder.LOWERED));
 		borderPanel.add(bassSettingsPanel);
-		borderPanel.add(bassSettingsPanel);
+		borderPanel.add(bassSettingsAdvancedPanel);
 		bassParentPanel.add(borderPanel);
 		bassParentPanel.add(bassScrollPane);
-
-		bassSettingsAdvancedPanel.setVisible(false);
 
 		constraints.gridy = startY;
 		constraints.anchor = anchorSide;
@@ -2288,7 +2286,7 @@ public class VibeComposerGUI extends JFrame
 		randomChordMaxStrumPauseChance = new DetachedKnobPanel("Max. Strum<br>Pause %", 35);
 		chordSettingsPanel.add(randomChordMaxStrumPauseChance);
 
-		JButton clearChordPatternSeeds = makeButton("Clear presets", "ClearChordPatterns");
+		JButton clearChordPatternSeeds = makeButton("Clear Seeds", "ClearChordSeeds");
 
 		JPanel chordSettingsExtraPanel = new JPanel();
 		JLabel csExtra = new JLabel("CHORD SETTINGS+");
@@ -2306,6 +2304,7 @@ public class VibeComposerGUI extends JFrame
 		chordSettingsExtraPanel.add(randomChordPattern);
 		chordSettingsExtraPanel.add(randomChordShiftChance);
 		chordSettingsExtraPanel.add(clearChordPatternSeeds);
+		chordSettingsExtraPanel.add(new PartManagerPanel(2));
 
 		toggleableComponents.add(randomChordDelay);
 		toggleableComponents.add(stretchLabel);
@@ -2446,7 +2445,7 @@ public class VibeComposerGUI extends JFrame
 		toggleableComponents.add(randomArpStretchType);
 		toggleableComponents.add(randomArpStretchPicker);
 
-		JButton clearArpPatternSeeds = makeButton("Clear Patterns", "ClearArpPatterns");
+		JButton clearArpPatternSeeds = makeButton("Clear Seeds", "ClearArpSeeds");
 		JPanel arpSettingsExtraPanel = new JPanel();
 		JLabel csExtra = new JLabel("ARP SETTINGS+");
 		csExtra.setPreferredSize(new Dimension(120, 30));
@@ -2468,6 +2467,7 @@ public class VibeComposerGUI extends JFrame
 		arpSettingsExtraPanel.add(randomArpMaxLength);
 		arpSettingsExtraPanel.add(randomArpCorrectMelodyNotes);
 		arpSettingsExtraPanel.add(clearArpPatternSeeds);
+		arpSettingsExtraPanel.add(new PartManagerPanel(3));
 		toggleableComponents.add(arpSettingsExtraPanel);
 
 
@@ -2558,7 +2558,7 @@ public class VibeComposerGUI extends JFrame
 		randomDrumsGenerateOnCompose = makeCheckBox("on Compose", true, true);
 		drumsPanel.add(randomDrumsGenerateOnCompose);
 
-		JButton clearPatternSeeds = makeButton("Clear Presets", "ClearPatterns");
+		JButton clearPatternSeeds = makeButton("Clear Seeds", "ClearDrumSeeds");
 
 		randomDrumMaxSwingAdjust = new DetachedKnobPanel("Max Swing+-", 20, 0, 50);
 		randomDrumSlide = new CustomCheckBox("Random Offset", false);
@@ -2630,58 +2630,6 @@ public class VibeComposerGUI extends JFrame
 		drumsPanel.add(new JLabel("On Generate"));
 		drumsPanel.add(randomDrumHitsMultiplierOnGenerate);
 		drumsPanel.add(randomDrumSlide);
-		drumPartPresetBox = new ScrollComboBox<>();
-		ScrollComboBox.addAll(new String[] { OMNI.EMPTYCOMBO }, drumPartPresetBox);
-		File folder = new File(DRUMS_FOLDER);
-		if (folder.exists()) {
-			File[] listOfFiles = folder.listFiles();
-			for (File f : listOfFiles) {
-				if (f.isFile()) {
-					String fileName = f.getName();
-					int pos = fileName.lastIndexOf(".");
-					if (pos > 0 && pos < (fileName.length() - 1)) {
-						fileName = fileName.substring(0, pos);
-					}
-
-					drumPartPresetBox.addItem(fileName);
-				}
-			}
-		}
-
-
-		drumPartPresetBox.addItemListener(new ItemListener() {
-
-			@Override
-			public void itemStateChanged(ItemEvent event) {
-				if (event.getStateChange() == ItemEvent.SELECTED) {
-					String item = (String) event.getItem();
-					if (OMNI.EMPTYCOMBO.equals(item)) {
-						return;
-					}
-
-					LG.i("Trying to load drum preset: " + item);
-
-					// check if file exists | special case: --- should load new GUIConfig()
-					File loadedFile = new File(DRUMS_FOLDER + "/" + item + ".xml");
-					if (loadedFile.exists()) {
-						try {
-							unmarshallDrums(loadedFile);
-							drumPartPresetBox.setVal(OMNI.EMPTYCOMBO);
-						} catch (JAXBException | IOException e) {
-							LG.e(e);
-							return;
-						}
-					}
-
-					LG.i("Loaded preset: " + item);
-				}
-			}
-		});
-
-		drumPartPresetAddCheckbox = new CustomCheckBox("Add", false);
-		drumsPanel.add(new JLabel("Presets(/drums):"));
-		drumsPanel.add(drumPartPresetBox);
-		drumsPanel.add(drumPartPresetAddCheckbox);
 
 
 		JPanel drumExtraSettings = new JPanel();
@@ -2694,9 +2642,6 @@ public class VibeComposerGUI extends JFrame
 		combineDrumTracks = new CustomCheckBox("Combine MIDI Tracks", true);
 		drumExtraSettings.add(combineDrumTracks);
 
-		drumExtraSettings.add(makeButton("Save Drums As", "DrumSave"));
-		drumExtraSettings.add(makeButton("Load Drums", "DrumLoad"));
-
 		drumExtraSettings.add(randomDrumPattern);
 		drumExtraSettings.add(randomDrumVelocityPatternChance);
 
@@ -2705,6 +2650,7 @@ public class VibeComposerGUI extends JFrame
 
 		randomDrumsOverrandomize = new DetachedKnobPanel("Overrandomize", 0, 0, 100);
 		drumExtraSettings.add(randomDrumsOverrandomize);
+		drumExtraSettings.add(new PartManagerPanel(4));
 
 		toggleableComponents.add(drumExtraSettings);
 
@@ -7234,52 +7180,6 @@ public class VibeComposerGUI extends JFrame
 			//worker.execute();
 		}
 
-		if (ae.getActionCommand() == "DrumSave") {
-
-			String drumsDirectory = DRUMS_FOLDER + "/";
-			File makeSavedDir = new File(drumsDirectory);
-			makeSavedDir.mkdir();
-
-			JFileChooser chooser = new JFileChooser(makeSavedDir);
-			int retrival = chooser.showSaveDialog(null);
-			if (retrival == JFileChooser.APPROVE_OPTION && chooser.getSelectedFile() != null) {
-				try {
-					String filepath = chooser.getSelectedFile().toString();
-					String filename = chooser.getSelectedFile().getName().replaceAll(".xml", "");
-					marshalDrums(((filepath.length() > 4)
-							&& (filepath.lastIndexOf(".xml") == filepath.length() - 4)) ? filepath
-									: filepath + ".xml");
-					drumPartPresetBox.addItem(filename);
-				} catch (Exception ex) {
-					LG.e(ex);
-				}
-			}
-		}
-
-		if (ae.getActionCommand() == "DrumLoad") {
-			FileDialog fd = new FileDialog(this, "Choose a file", FileDialog.LOAD);
-			fd.setDirectory(null);
-			fd.setFile("*.xml");
-			fd.setVisible(true);
-			String filename = fd.getFile();
-			File[] files = fd.getFiles();
-			if (filename == null)
-				LG.i(("You cancelled the choice"));
-			else {
-				LG.i(("You chose " + filename));
-				try {
-					unmarshallDrums(files[0]);
-				} catch (JAXBException |
-
-						IOException e) {
-					// Auto-generated catch block
-					LG.e(e);
-				}
-			}
-			soloMuterPossibleChange = true;
-			tabPanePossibleChange = true;
-		}
-
 		if (ae.getActionCommand() == "UncheckComposeRandom") {
 			switchAllOnComposeCheckboxes(false);
 			switchOnComposeRandom.setText("  Tick all 'on Compose'   ");
@@ -7327,32 +7227,21 @@ public class VibeComposerGUI extends JFrame
 			tabPanePossibleChange = true;
 		}
 
-		if (ae.getActionCommand() == "ClearPatterns") {
-			for (DrumPanel dp : drumPanels) {
-				dp.setPatternSeed(0);
-				if (dp.getPattern() != RhythmPattern.FULL) {
-					dp.setPattern(RhythmPattern.FULL);
-					dp.setPauseChance(3 * dp.getPauseChance());
-				}
-
-			}
-		}
-
-		if (ae.getActionCommand() == "ClearChordPatterns")
-
-		{
-			for (InstPanel cp : getAffectedPanels(3)) {
+		if (ae.getActionCommand() == "ClearChordSeeds")	{
+			for (InstPanel cp : getAffectedPanels(2)) {
 				cp.setPatternSeed(0);
-				cp.setPattern(RhythmPattern.FULL);
-
 			}
 		}
 
-		if (ae.getActionCommand() == "ClearArpPatterns") {
+		if (ae.getActionCommand() == "ClearArpSeeds") {
 			for (InstPanel ap : getAffectedPanels(3)) {
 				ap.setPatternSeed(0);
-				ap.setPattern(RhythmPattern.FULL);
+			}
+		}
 
+		if (ae.getActionCommand() == "ClearDrumSeeds") {
+			for (InstPanel dp : getAffectedPanels(4)) {
+				dp.setPatternSeed(0);
 			}
 		}
 
@@ -7412,7 +7301,7 @@ public class VibeComposerGUI extends JFrame
 		}
 	}
 
-	private void recalculateSoloMuters() {
+	public void recalculateSoloMuters() {
 		for (int i = 0; i < 5; i++) {
 			recalcGroupSolo(i);
 			recalcGroupMute(i);
@@ -8044,7 +7933,7 @@ public class VibeComposerGUI extends JFrame
 		return ArpPartsWrapper.class;
 	}
 
-	public void marshalParts(String path, int partNum) throws JAXBException {
+	public static void marshalParts(String path, int partNum) throws JAXBException {
 		SimpleDateFormat f = (SimpleDateFormat) SimpleDateFormat.getInstance();
 		f.applyPattern("yyMMdd-hh-mm-ss");
 		Class<? extends InstPartsWrapper> wrapperClass = InstPartsWrapper.getWrapperClass(partNum);
@@ -8063,14 +7952,6 @@ public class VibeComposerGUI extends JFrame
 		InstPartsWrapper<?> wrapper = (InstPartsWrapper<?>) context.createUnmarshaller()
 				.unmarshal(new FileReader(f));
 		recreateInstPanelsFromInstParts(partNum, wrapper.getParts(), clearPreviousPanels);
-	}
-
-	public void marshalDrums(String path) throws JAXBException, IOException {
-		marshalParts(path, 4);
-	}
-
-	public void unmarshallDrums(File f) throws JAXBException, IOException {
-		unmarshallParts(f, 4, !drumPartPresetAddCheckbox.isSelected());
 	}
 
 	public void marshalConfig(GUIConfig config, String path, int cutOff)
@@ -8222,7 +8103,7 @@ public class VibeComposerGUI extends JFrame
 
 		// drum panel
 		cs.add(randomDrumHitsMultiplierOnGenerate);
-		cs.add(drumPartPresetAddCheckbox);
+		cs.add(null);
 		cs.add(randomDrumsOverrandomize);
 
 		// extra settings
@@ -8684,7 +8565,7 @@ public class VibeComposerGUI extends JFrame
 		vibeComposerGUI.repaint();
 	}
 
-	private List<InstPart> getInstPartsFromInstPanels(int inst, boolean removeMuted) {
+	public static List<InstPart> getInstPartsFromInstPanels(int inst, boolean removeMuted) {
 		List<? extends InstPanel> panels = getInstList(inst);
 		List<InstPart> parts = new ArrayList<>();
 		for (InstPanel p : panels) {
