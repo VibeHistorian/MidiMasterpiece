@@ -1,24 +1,17 @@
 package org.vibehistorian.vibecomposer.Popups;
 
-import java.awt.Dimension;
-import java.util.HashMap;
-import java.util.Map;
-
-import javax.sound.midi.Sequencer;
-import javax.swing.BoxLayout;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JSlider;
-import javax.swing.JTextField;
-
-import org.vibehistorian.vibecomposer.LG;
-import org.vibehistorian.vibecomposer.SwingUtils;
-import org.vibehistorian.vibecomposer.VibeComposerGUI;
 import org.vibehistorian.vibecomposer.Helpers.CheckBoxIcon;
+import org.vibehistorian.vibecomposer.LG;
 import org.vibehistorian.vibecomposer.Panels.DrumPanel;
 import org.vibehistorian.vibecomposer.Panels.VisualPatternPanel;
+import org.vibehistorian.vibecomposer.SwingUtils;
+import org.vibehistorian.vibecomposer.VibeComposerGUI;
+
+import javax.sound.midi.Sequencer;
+import javax.swing.*;
+import java.awt.*;
+import java.util.HashMap;
+import java.util.Map;
 
 public class DrumLoopPopup {
 	final JFrame frame = new JFrame();
@@ -122,7 +115,7 @@ public class DrumLoopPopup {
 						}
 					} catch (Exception e) {
 						LG.d("Exception in SEQUENCE SLIDER:");
-						e.printStackTrace();
+						LG.e(e);
 						try {
 							sleep(200);
 						} catch (InterruptedException e2) {

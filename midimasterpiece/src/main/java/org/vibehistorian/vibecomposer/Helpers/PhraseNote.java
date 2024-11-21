@@ -1,6 +1,7 @@
 package org.vibehistorian.vibecomposer.Helpers;
 
 import jm.music.data.Note;
+import org.vibehistorian.vibecomposer.LG;
 
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlTransient;
@@ -136,7 +137,7 @@ public class PhraseNote implements Cloneable {
 		try {
 			return (PhraseNote) super.clone();
 		} catch (CloneNotSupportedException e) {
-			e.printStackTrace();
+			LG.e(e);
 		}
 		return null;
 	}

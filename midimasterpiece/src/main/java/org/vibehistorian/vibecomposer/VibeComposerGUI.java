@@ -53,9 +53,10 @@ import org.vibehistorian.vibecomposer.Parts.ChordPart;
 import org.vibehistorian.vibecomposer.Parts.Defaults.DrumDefaults;
 import org.vibehistorian.vibecomposer.Parts.Defaults.DrumSettings;
 import org.vibehistorian.vibecomposer.Parts.DrumPart;
-import org.vibehistorian.vibecomposer.Parts.DrumPartsWrapper;
 import org.vibehistorian.vibecomposer.Parts.InstPart;
 import org.vibehistorian.vibecomposer.Parts.MelodyPart;
+import org.vibehistorian.vibecomposer.Parts.Wrappers.ArpPartsWrapper;
+import org.vibehistorian.vibecomposer.Parts.Wrappers.InstPartsWrapper;
 import org.vibehistorian.vibecomposer.Popups.*;
 import org.vibehistorian.vibecomposer.Section.SectionType;
 
@@ -2667,7 +2668,7 @@ public class VibeComposerGUI extends JFrame
 							unmarshallDrums(loadedFile);
 							drumPartPresetBox.setVal(OMNI.EMPTYCOMBO);
 						} catch (JAXBException | IOException e) {
-							e.printStackTrace();
+							LG.e(e);
 							return;
 						}
 					}
@@ -4997,7 +4998,7 @@ public class VibeComposerGUI extends JFrame
 						LG.e("Exception in SEQUENCE SLIDER:");
 						heavyBackgroundTasksInProgress = false;
 						LG.e(e.getMessage());
-						e.printStackTrace();
+						LG.e(e);
 						try {
 							sleep(500);
 						} catch (InterruptedException e2) {
@@ -5320,7 +5321,7 @@ public class VibeComposerGUI extends JFrame
 				}
 			} catch (MidiUnavailableException e) {
 				// Auto-generated catch block
-				e.printStackTrace();
+				LG.e(e);
 			}
 		}
 		midiModeDevices.addActionListener(new ActionListener() {
@@ -5425,7 +5426,7 @@ public class VibeComposerGUI extends JFrame
 					}
 					prepareMidiPlayback(synthesizer);
 				} catch (InvalidMidiDataException | MidiUnavailableException e) {
-					e.printStackTrace();
+					LG.e(e);
 				}
 				switchMidiButtons(true);
 				messageLabel.setText("PROCESSED WAV!");
@@ -5444,7 +5445,7 @@ public class VibeComposerGUI extends JFrame
 		try {
 			desktop.open(f);
 		} catch (IOException e) {
-			e.printStackTrace();
+			LG.e(e);
 		}
 
 	}
@@ -5473,7 +5474,7 @@ public class VibeComposerGUI extends JFrame
 					try {
 						sleep(25);
 					} catch (InterruptedException e) {
-						e.printStackTrace();
+						LG.e(e);
 						return;
 					}
 				}
@@ -5555,7 +5556,7 @@ public class VibeComposerGUI extends JFrame
 			}
 		} catch (InvalidMidiDataException e) {
 			// Auto-generated catch block
-			e.printStackTrace();
+			LG.e(e);
 		}
 	}
 
@@ -6097,7 +6098,7 @@ public class VibeComposerGUI extends JFrame
 
 		} catch (Exception e) {
 			LG.i(("User screwed up his inputs!"));
-			e.printStackTrace();
+			LG.e(e);
 		}
 
 	}
@@ -6619,7 +6620,7 @@ public class VibeComposerGUI extends JFrame
 			}
 			startBpm = mainBpm.getInt();
 		} catch (MidiUnavailableException | InvalidMidiDataException ex) {
-			ex.printStackTrace();
+			LG.e(ex);
 		}
 	}
 
@@ -6941,7 +6942,7 @@ public class VibeComposerGUI extends JFrame
 			synthesizer = null;
 			synth = null;
 			soundfont = null;
-			ex.printStackTrace();
+			LG.e(ex);
 			LG.i(("NO SOUNDBANK WITH THAT NAME FOUND!"));
 		}
 		return synthesizer;
@@ -7049,7 +7050,7 @@ public class VibeComposerGUI extends JFrame
 			dconsole = new DebugConsole();
 		} catch (Exception e) {
 			// Auto-generated catch block
-			e.printStackTrace();
+			LG.e(e);
 		}
 	}
 
@@ -7214,7 +7215,7 @@ public class VibeComposerGUI extends JFrame
 					try {
 						
 					} catch (Throwable ex) {
-						ex.printStackTrace();
+						LG.e(ex);
 						return null;
 					}
 			
@@ -7250,7 +7251,7 @@ public class VibeComposerGUI extends JFrame
 									: filepath + ".xml");
 					drumPartPresetBox.addItem(filename);
 				} catch (Exception ex) {
-					ex.printStackTrace();
+					LG.e(ex);
 				}
 			}
 		}
@@ -7272,7 +7273,7 @@ public class VibeComposerGUI extends JFrame
 
 						IOException e) {
 					// Auto-generated catch block
-					e.printStackTrace();
+					LG.e(e);
 				}
 			}
 			soloMuterPossibleChange = true;
@@ -7541,7 +7542,7 @@ public class VibeComposerGUI extends JFrame
 			marshalPreset(preset, filePath);
 		} catch (IOException | JAXBException e) {
 			// Auto-generated catch block
-			e.printStackTrace();
+			LG.e(e);
 		}
 	}
 
@@ -7596,7 +7597,7 @@ public class VibeComposerGUI extends JFrame
 					Thread.sleep(25);
 				} catch (InterruptedException e) {
 					// Auto-generated catch block
-					e.printStackTrace();
+					LG.e(e);
 				}
 			} else {
 				sequencer.setLoopCount(1);
@@ -7863,7 +7864,7 @@ public class VibeComposerGUI extends JFrame
 			}
 		} catch (Exception e) {
 			LG.i(("Bad user input in custom chords/durations!\n"));
-			e.printStackTrace();
+			LG.e(e);
 		}
 		if (!solvedChords.isEmpty() && !solvedDurations.isEmpty()) {
 			LG.i((solvedChords.toString()));
@@ -8039,31 +8040,37 @@ public class VibeComposerGUI extends JFrame
 		throw new MidiUnavailableException("The AudioSynthesizer is not available.");
 	}*/
 
-	public void marshalDrums(String path) throws JAXBException, IOException {
+	public static Class<?> getWrapperClass(int partNum) {
+		return ArpPartsWrapper.class;
+	}
+
+	public void marshalParts(String path, int partNum) throws JAXBException {
 		SimpleDateFormat f = (SimpleDateFormat) SimpleDateFormat.getInstance();
 		f.applyPattern("yyMMdd-hh-mm-ss");
-		JAXBContext context = JAXBContext.newInstance(DrumPartsWrapper.class);
+		Class<? extends InstPartsWrapper> wrapperClass = InstPartsWrapper.getWrapperClass(partNum);
+		JAXBContext context = JAXBContext.newInstance(wrapperClass, InstPartsWrapper.class);
 		Marshaller mar = context.createMarshaller();
 		mar.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
-		DrumPartsWrapper wrapper = new DrumPartsWrapper();
-		List<DrumPart> parts = (List<DrumPart>) (List<?>) getInstPartsFromInstPanels(4, false);
-		wrapper.setDrumParts(parts);
+		InstPartsWrapper<?> wrapper = InstPartsWrapper.forClass(wrapperClass);
+		List<? extends InstPart> parts = getInstPartsFromInstPanels(partNum, false);
+		wrapper.setParts(parts);
 		mar.marshal(wrapper, new File(path));
 		LG.i("File saved: " + path);
 	}
 
-	public void unmarshallDrums(File f) throws JAXBException, IOException {
-		JAXBContext context = JAXBContext.newInstance(DrumPartsWrapper.class);
-		DrumPartsWrapper wrapper = (DrumPartsWrapper) context.createUnmarshaller()
+	public void unmarshallParts(File f, int partNum, boolean clearPreviousPanels) throws JAXBException, IOException {
+		JAXBContext context = JAXBContext.newInstance(InstPartsWrapper.getWrapperClass(partNum), InstPartsWrapper.class);
+		InstPartsWrapper<?> wrapper = (InstPartsWrapper<?>) context.createUnmarshaller()
 				.unmarshal(new FileReader(f));
-		recreateInstPanelsFromInstParts(4, wrapper.getDrumParts(),
-				!drumPartPresetAddCheckbox.isSelected());
+		recreateInstPanelsFromInstParts(partNum, wrapper.getParts(), clearPreviousPanels);
 	}
 
-	public void unmarshallDrumsFromResource(InputStream f) throws JAXBException, IOException {
-		JAXBContext context = JAXBContext.newInstance(DrumPartsWrapper.class);
-		DrumPartsWrapper wrapper = (DrumPartsWrapper) context.createUnmarshaller().unmarshal(f);
-		recreateInstPanelsFromInstParts(4, wrapper.getDrumParts());
+	public void marshalDrums(String path) throws JAXBException, IOException {
+		marshalParts(path, 4);
+	}
+
+	public void unmarshallDrums(File f) throws JAXBException, IOException {
+		unmarshallParts(f, 4, !drumPartPresetAddCheckbox.isSelected());
 	}
 
 	public void marshalConfig(GUIConfig config, String path, int cutOff)
@@ -10191,7 +10198,7 @@ public class VibeComposerGUI extends JFrame
 			queueMidiEventForRemoval(trackNum, noteOff);
 			queueMidiEventForRemoval(trackNum, noteOn);
 		} catch (InvalidMidiDataException e) {
-			e.printStackTrace();
+			LG.e(e);
 		}
 	}
 

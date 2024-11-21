@@ -197,7 +197,7 @@ public class NumPanel extends JPanel {
 								sleep(25);
 							} catch (InterruptedException e) {
 								// Auto-generated catch block
-								e.printStackTrace();
+								LG.e(e);
 							}
 						}
 					}

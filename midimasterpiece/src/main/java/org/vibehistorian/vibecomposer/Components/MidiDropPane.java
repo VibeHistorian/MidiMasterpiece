@@ -49,7 +49,7 @@ public class MidiDropPane extends JPanel {
 		/*try {
 			target = ImageIO.read(new File("target.png"));
 		} catch (IOException ex) {
-			ex.printStackTrace();
+			LG.e(ex);
 		}*/
 
 		setBorder(BorderFactory.createBevelBorder(BevelBorder.LOWERED));
@@ -95,7 +95,7 @@ public class MidiDropPane extends JPanel {
 		try {
 			getMyDropTarget().addDropTargetListener(getDropTargetHandler());
 		} catch (TooManyListenersException ex) {
-			ex.printStackTrace();
+			LG.e(ex);
 		}
 	}
 
@@ -213,7 +213,7 @@ public class MidiDropPane extends JPanel {
 					}
 
 				} catch (Exception ex) {
-					ex.printStackTrace();
+					LG.e(ex);
 				}
 			} else {
 				dtde.rejectDrop();
