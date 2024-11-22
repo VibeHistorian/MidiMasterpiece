@@ -482,7 +482,7 @@ public class MidiGeneratorUtils {
 				double multiplier = minimum
 						+ maxMultiplierAdd * ((dur - start) / (maxDuration - start));
 				if (multiplier < 0.1) {
-					n.setPitch(Note.REST);
+					n.setPitch(Pitches.REST);
 				} else {
 					n.setDynamic(OMNI.clampVel(n.getDynamic() * multiplier));
 				}

@@ -1,5 +1,6 @@
 package org.vibehistorian.vibecomposer.Helpers;
 
+import jm.constants.Pitches;
 import jm.music.data.Note;
 import org.vibehistorian.vibecomposer.LG;
 
@@ -65,7 +66,7 @@ public class PhraseNote implements Cloneable {
 	}
 
 	public void setPitch(int pitch) {
-		this.pitch = pitch >= 0 ? pitch : Note.REST;
+		this.pitch = pitch >= 0 ? pitch : Pitches.REST;
 	}
 
 	public int getDynamic() {

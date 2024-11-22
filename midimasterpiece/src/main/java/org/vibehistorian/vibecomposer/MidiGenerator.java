@@ -1694,7 +1694,7 @@ public class MidiGenerator implements JMC {
 					splitNote.setOffset(n.getOffset() + intersectionLength);
 					switch (gc.getMelodyRhythmAccentsMode()) {
 					case 0:
-						splitNote.setPitch(Note.REST);
+						splitNote.setPitch(Pitches.REST);
 						break;
 					case 1:
 						int newPitchOrderUp = sortedPitches.indexOf(originalPitch % 12) + 1;

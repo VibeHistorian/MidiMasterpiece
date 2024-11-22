@@ -1,6 +1,7 @@
 package org.vibehistorian.vibecomposer;
 
 import jm.JMC;
+import jm.constants.Pitches;
 import jm.midi.SMF;
 import jm.midi.Track;
 import jm.midi.event.CChange;
@@ -205,7 +206,7 @@ public class JMusicUtilsCustom implements JMC {
 			}
 
 			// create new pitch value
-			if (pitchVariation > 0) {
+			if (pitchVariation > 0 && n.getPitch() != Pitches.REST) {
 				n.setPitch(n.getPitch()
 						+ (int) (generator.nextDouble() * (pitchVariation * 2) - pitchVariation));
 			}

@@ -1,5 +1,6 @@
 package org.vibehistorian.vibecomposer.Popups;
 
+import jm.constants.Pitches;
 import jm.music.data.Note;
 import jm.music.data.Score;
 import org.apache.commons.lang3.tuple.Pair;
@@ -275,7 +276,11 @@ public class MidiEditPopup extends CloseablePopup {
 				PhraseNote lastNote = pn.get(pn.size() - 1);
 				lastNote.setRv(lastNote.getRv() + mvea.sectionLength - length);
 			}
-			pn.forEach(f -> f.setPitch(f.getPitch() - VibeComposerGUI.transposeScore.getInt()));
+			pn.forEach(f -> {
+				if (f.getPitch() != Pitches.REST) {
+					f.setPitch(f.getPitch() - VibeComposerGUI.transposeScore.getInt());
+				}
+			});
 			mvea.setCustomValues(pn.copy());
 
 			return pn;
@@ -524,7 +529,7 @@ public class MidiEditPopup extends CloseablePopup {
 				for (PhraseNote n : pn) {
 					int closestNormalized = MidiUtils.getClosestFromList(MidiUtils.MAJ_SCALE,
 							n.getPitch() % 12);
-					if (isSnapPitch()) {
+					if (isSnapPitch() && n.getPitch() != Pitches.REST) {
 						n.setPitch(MidiUtils.octavePitch(n.getPitch()) + closestNormalized);
 					}
 					n.setRv(0);
@@ -631,9 +636,11 @@ public class MidiEditPopup extends CloseablePopup {
 		}
 		final int finalExtraTranspose = extraTranspose;
 		notes.forEach(e -> {
-			int pitch = e.getPitch() + VibeComposerGUI.transposeScore.getInt() + finalExtraTranspose
-					+ ip.getTranspose();
-			e.setPitch(pitch);
+			if (e.getPitch() != Pitches.REST) {
+				int pitch = e.getPitch() + VibeComposerGUI.transposeScore.getInt() + finalExtraTranspose
+						+ ip.getTranspose();
+				e.setPitch(pitch);
+			}
 		});
 		Score scr = new Score();
 		PartExt prt = PartExt.makeFillerPart();

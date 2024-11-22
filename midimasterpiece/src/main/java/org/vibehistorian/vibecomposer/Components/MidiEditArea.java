@@ -310,6 +310,9 @@ public class MidiEditArea extends JComponent {
 				int parsedInt = Integer.valueOf(e);
 				for (PhraseNote n : selectedNotes) {
 					// 0..127 midi value
+					if (n.getPitch() == Pitches.REST) {
+						continue;
+					}
 					n.setPitch(OMNI.clampMidi(n.getPitch() + parsedInt));
 				}
 				setCustomValues(getValues());
@@ -952,8 +955,10 @@ public class MidiEditArea extends JComponent {
 	}
 
 	void setVal(int pos, int pitch) {
-		if (pitch == Pitches.REST && values.get(pos).getRv() < DBL_ERR) {
-			values.remove(pos);
+		if (pitch == Pitches.REST) {
+			if (values.get(pos).getRv() < DBL_ERR) {
+				values.remove(pos);
+			}
 		} else {
 			pitch = OMNI.clamp(pitch, rangeMin, rangeMax);
 			if (pop != null && pop.isSnapPitch()) {

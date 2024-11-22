@@ -1445,7 +1445,7 @@ public class MelodyGenerator {
                     switch (sixteenths) {
                         case 0:
                         case 1:
-                            n.setPitch(Note.REST);
+                            n.setPitch(Pitches.REST);
                             break;
                         case 2:
                             usedDelay = MidiGenerator.Durations.SIXTEENTH_NOTE;
