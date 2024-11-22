@@ -60,7 +60,7 @@ public class PartManagerPanel extends TransparentablePanel {
                     try {
                         String dirPath = makeSavedDir.getPath().toString();
                         String fileName = newPresetName.getText().replaceAll(".xml", "");
-                        int numParts = VibeComposerGUI.marshalParts(dirPath + "/" + fileName + ".xml", part);
+                        int numParts = VibeComposerGUI.marshalParts(dirPath + "/" + fileName + ".xml", part, true);
                         partPresetBox.addItem(fileName + " [" + numParts + "]");
                         newPresetName.setText("");
                     } catch (Exception ex) {
@@ -70,6 +70,7 @@ public class PartManagerPanel extends TransparentablePanel {
                 }
             }
         });
+        newPresetName.setToolTipText("<html>Type a name, press [Enter] to save preset!<br>Tip: Main instruments can be saved selectively by <b>Lock</b>ing only some of them.</html>");
     }
 
     private void initPresetBox(String folderName) {

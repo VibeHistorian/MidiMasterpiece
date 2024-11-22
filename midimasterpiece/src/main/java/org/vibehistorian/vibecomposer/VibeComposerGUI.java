@@ -7934,7 +7934,7 @@ public class VibeComposerGUI extends JFrame
 		return ArpPartsWrapper.class;
 	}
 
-	public static int marshalParts(String path, int partNum) throws JAXBException {
+	public static int marshalParts(String path, int partNum, boolean selectiveSave) throws JAXBException {
 		SimpleDateFormat f = (SimpleDateFormat) SimpleDateFormat.getInstance();
 		f.applyPattern("yyMMdd-hh-mm-ss");
 		Class<? extends InstPartsWrapper> wrapperClass = InstPartsWrapper.getWrapperClass(partNum);
@@ -7942,7 +7942,11 @@ public class VibeComposerGUI extends JFrame
 		Marshaller mar = context.createMarshaller();
 		mar.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
 		InstPartsWrapper<?> wrapper = InstPartsWrapper.forClass(wrapperClass);
-		List<? extends InstPart> parts = getInstPartsFromInstPanels(partNum, true, false);
+		List<? extends InstPanel> affectedPanels = getAffectedPanels(partNum);
+		if (selectiveSave && affectedPanels.stream().anyMatch(e -> e.getLockInst())) {
+			affectedPanels = affectedPanels.stream().filter(e -> e.getLockInst()).collect(Collectors.toList());
+		}
+		List<? extends InstPart> parts = getInstPartsFromInstPanels(affectedPanels, false);
 		wrapper.setParts(parts);
 		mar.marshal(wrapper, new File(path));
 		LG.i("File saved: " + path);
@@ -8251,11 +8255,11 @@ public class VibeComposerGUI extends JFrame
 		gc.setArpsEnable(addInst[3].isSelected());
 		gc.setDrumsEnable(addInst[4].isSelected());
 
-		gc.setMelodyParts((List<MelodyPart>) (List<?>) getInstPartsFromInstPanels(0, false, false));
-		gc.setBassParts((List<BassPart>) (List<?>) getInstPartsFromInstPanels(1, false, false));
-		gc.setChordParts((List<ChordPart>) (List<?>) getInstPartsFromInstPanels(2, false, false));
-		gc.setArpParts((List<ArpPart>) (List<?>) getInstPartsFromInstPanels(3, false, false));
-		gc.setDrumParts((List<DrumPart>) (List<?>) getInstPartsFromInstPanels(4, false, false));
+		gc.setMelodyParts((List<MelodyPart>) (List<?>) getInstPartsFromInstPanels(0, false));
+		gc.setBassParts((List<BassPart>) (List<?>) getInstPartsFromInstPanels(1, false));
+		gc.setChordParts((List<ChordPart>) (List<?>) getInstPartsFromInstPanels(2, false));
+		gc.setArpParts((List<ArpPart>) (List<?>) getInstPartsFromInstPanels(3, false));
+		gc.setDrumParts((List<DrumPart>) (List<?>) getInstPartsFromInstPanels(4, false));
 
 		gc.setChordGenSettings(getChordSettingsFromUI());
 
@@ -8567,8 +8571,11 @@ public class VibeComposerGUI extends JFrame
 		vibeComposerGUI.repaint();
 	}
 
-	public static List<InstPart> getInstPartsFromInstPanels(int inst, boolean affectedPanels, boolean removeMuted) {
-		List<? extends InstPanel> panels = affectedPanels ? getAffectedPanels(inst) : getInstList(inst);
+	public static List<InstPart> getInstPartsFromInstPanels(int inst, boolean removeMuted) {
+		return getInstPartsFromInstPanels(getInstList(inst), removeMuted);
+	}
+
+	public static List<InstPart> getInstPartsFromInstPanels(List<? extends InstPanel> panels, boolean removeMuted) {
 		List<InstPart> parts = new ArrayList<>();
 		for (InstPanel p : panels) {
 			if (!removeMuted || !p.getMuteInst()) {
