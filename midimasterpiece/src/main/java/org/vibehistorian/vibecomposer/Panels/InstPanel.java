@@ -99,6 +99,7 @@ public abstract class InstPanel extends JPanel {
 	protected KnobPanel accents = new KnobPanel("Accent", 100);
 
 	protected JLabel panelOrder = new JLabel("1");
+	protected int orderOffset = 1;
 
 	protected JLabel patternSeedLabel = new JLabel("Seed");
 	protected RandomValueButton patternSeed = new RandomValueButton(0);
@@ -145,7 +146,16 @@ public abstract class InstPanel extends JPanel {
 		for (ChordSpanFill fill : ChordSpanFill.values()) {
 			chordSpanFill.addItem(fill);
 		}
-		panelOrder.setPreferredSize(new Dimension(20, SMALL_BTN_HEIGHT));
+		panelOrder.setPreferredSize(new Dimension(30, SMALL_BTN_HEIGHT));
+		panelOrder.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseReleased(MouseEvent e) {
+				if (SwingUtilities.isRightMouseButton(e)) {
+					int orderAndOffset = getPanelOrder();
+					setOrderAndOffset(orderAndOffset, orderAndOffset);
+				}
+			}
+		});
 
 		setBorder(BorderFactory.createBevelBorder(BevelBorder.LOWERED));
 		//volSlider.setMaximum(100);
@@ -382,6 +392,8 @@ public abstract class InstPanel extends JPanel {
 
 	public void setDefaultsFromInstPart(InstPart part) {
 		setInstrument(part.getInstrument());
+
+		setOrderAndOffset(part.getOrder(), part.getOrderOffset());
 
 		setHitsPerPattern(part.getHitsPerPattern());
 		setChordSpan(part.getChordSpan());
@@ -638,11 +650,19 @@ public abstract class InstPanel extends JPanel {
 	}
 
 	public int getPanelOrder() {
-		return Integer.valueOf(panelOrder.getText());
+		return Integer.valueOf(panelOrder.getText().split("\\(")[0]);
 	}
 
 	public void setPanelOrder(int val) {
-		this.panelOrder.setText("" + val);
+		setOrderAndOffset(val, orderOffset);
+	}
+
+	public void setOrderAndOffset(int order, Integer offset) {
+		if (offset == null) {
+			offset = order;
+		}
+		setOrderOffset(offset);
+		this.panelOrder.setText(order == offset ? String.valueOf(order) : (order + "(" + offset + ")"));
 	}
 
 	public boolean getFillFlip() {
@@ -830,6 +850,14 @@ public abstract class InstPanel extends JPanel {
 
 	public void setFeedbackVol(int val) {
 		this.feedbackVol.setInt(val);
+	}
+
+	public int getOrderOffset() {
+		return orderOffset;
+	}
+
+	public void setOrderOffset(int orderOffset) {
+		this.orderOffset = orderOffset;
 	}
 
 	public MidiMVI getMidiMVI() {

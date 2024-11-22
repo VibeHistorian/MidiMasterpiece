@@ -1,26 +1,20 @@
 package org.vibehistorian.vibecomposer.Panels;
 
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.Insets;
+import org.apache.commons.lang3.tuple.Pair;
+import org.vibehistorian.vibecomposer.Components.CustomCheckBox;
+import org.vibehistorian.vibecomposer.Components.ScrollComboBox;
+import org.vibehistorian.vibecomposer.InstUtils;
+import org.vibehistorian.vibecomposer.Parts.Defaults.DrumDefaults;
+import org.vibehistorian.vibecomposer.Parts.DrumPart;
+import org.vibehistorian.vibecomposer.Parts.InstPart;
+import org.vibehistorian.vibecomposer.VibeComposerGUI;
+
+import javax.swing.*;
+import java.awt.*;
 import java.awt.event.ActionListener;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-
-import org.apache.commons.lang3.tuple.Pair;
-import org.vibehistorian.vibecomposer.InstUtils;
-import org.vibehistorian.vibecomposer.VibeComposerGUI;
-import org.vibehistorian.vibecomposer.Components.CustomCheckBox;
-import org.vibehistorian.vibecomposer.Components.ScrollComboBox;
-import org.vibehistorian.vibecomposer.Parts.DrumPart;
-import org.vibehistorian.vibecomposer.Parts.InstPart;
-import org.vibehistorian.vibecomposer.Parts.Defaults.DrumDefaults;
 
 public class DrumPanel extends InstPanel {
 	/**
@@ -38,7 +32,7 @@ public class DrumPanel extends InstPanel {
 		ScrollComboBox.addAll(new Integer[] { 10 }, midiChannel);
 
 		initDefaults(l);
-		this.add(new JLabel("#"));
+		//this.add(new JLabel("#"));
 		this.add(panelOrder);
 		addDefaultInstrumentControls();
 		addDefaultPanelButtons();
@@ -123,8 +117,6 @@ public class DrumPanel extends InstPanel {
 		part.setFromPanel(this, lastRandomSeed);
 
 		part.setVelocityPattern(getIsVelocityPattern());
-
-		part.setOrder(getPanelOrder());
 		return part;
 	}
 
@@ -134,8 +126,6 @@ public class DrumPanel extends InstPanel {
 		setDefaultsFromInstPart(part);
 
 		setIsVelocityPattern(part.isVelocityPattern());
-
-		setPanelOrder(part.getOrder());
 
 	}
 

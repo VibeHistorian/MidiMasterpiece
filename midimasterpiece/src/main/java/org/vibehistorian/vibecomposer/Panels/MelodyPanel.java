@@ -70,7 +70,7 @@ public class MelodyPanel extends InstPanel {
 		this.add(panSlider);
 		/*this.add(new JLabel("#"));
 		this.add(panelOrder);*/
-		this.add(new JLabel("#"));
+		//this.add(new JLabel("#"));
 		this.add(panelOrder);
 		addDefaultInstrumentControls();
 		addDefaultPanelButtons();
@@ -178,8 +178,6 @@ public class MelodyPanel extends InstPanel {
 
 		this.add(new JLabel("Midi ch."));
 		this.add(midiChannel);
-		setPanelOrder(1);
-
 	}
 
 	@Override
@@ -214,7 +212,6 @@ public class MelodyPanel extends InstPanel {
 	public MelodyPart toMelodyPart(int lastRandomSeed) {
 		MelodyPart part = new MelodyPart();
 		part.setFromPanel(this, lastRandomSeed);
-		part.setOrder(getPanelOrder());
 
 		part.setFillPauses(getFillPauses());
 		part.setChordNoteChoices(getChordNoteChoices());
@@ -240,7 +237,6 @@ public class MelodyPanel extends InstPanel {
 	public void setFromInstPart(InstPart p) {
 		MelodyPart part = (MelodyPart) p;
 		setDefaultsFromInstPart(part);
-		setPanelOrder(part.getOrder());
 
 		setFillPauses(part.isFillPauses());
 		setChordNoteChoices(part.getChordNoteChoices());

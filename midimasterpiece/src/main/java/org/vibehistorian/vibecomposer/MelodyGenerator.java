@@ -150,14 +150,14 @@ public class MelodyGenerator {
         }
         if (RANDOMIZE_TARGET_NOTES) {
             if (gc.getActualArrangement().getSections().indexOf(sec) < 1
-                    || TARGET_NOTES.get(mp.getOrder()) == null) {
+                    || TARGET_NOTES.get(mp.getOrderOffset()) == null) {
                 int targetNoteSeed = VibeComposerGUI.vibeComposerGUI.melody1ForcePatterns.isSelected()
                         ? (seed + 1)
-                        : (seed + mp.getOrder());
+                        : (seed + mp.getOrderOffset());
                 blockChordNoteChoices = MidiGeneratorUtils.generateNoteTargetOffsets(roots, targetNoteSeed,
                         gc.getMelodyBlockTargetMode(), gc.getMelodyTargetNoteVariation(), gc.getNoteTargetDirectionChoice());
             } else {
-                blockChordNoteChoices = TARGET_NOTES.get(mp.getOrder());
+                blockChordNoteChoices = TARGET_NOTES.get(mp.getOrderOffset());
             }
         } else {
             blockChordNoteChoices = (mp.getChordNoteChoices() != null)
@@ -168,7 +168,7 @@ public class MelodyGenerator {
                 blockChordNoteChoices.addAll(blockChordNoteChoices);
             }
         }
-        TARGET_NOTES.put(mp.getOrder(), blockChordNoteChoices);
+        TARGET_NOTES.put(mp.getOrderOffset(), blockChordNoteChoices);
         LG.d("Choices: " + blockChordNoteChoices);
 
         Vector<Note> noteList = new Vector<>();
@@ -1177,11 +1177,11 @@ public class MelodyGenerator {
         int RANDOM_SPLIT_NOTE_PITCH_EXCEPTION_RANGE = 4;
 
         int seed = mp.getPatternSeedWithPartOffset();
-        int orderSeed = seed + mp.getOrder();
+        int orderSeed = seed + mp.getOrderOffset();
         Random splitGenerator = new Random(orderSeed + 4);
         Random pauseGenerator = new Random(orderSeed + 5);
         Random pauseGenerator2 = new Random(orderSeed + 7);
-        Random variationGenerator = new Random(mp.getOrder() + gc.getArrangement().getSeed() + 6);
+        Random variationGenerator = new Random(mp.getOrderOffset() + gc.getArrangement().getSeed() + 6);
         Random velocityGenerator = new Random(orderSeed + 1 + notesSeedOffset);
         Random splitNoteGenerator = new Random(seed + 8);
         Random splitNoteExceptionGenerator = new Random(seed + 9);

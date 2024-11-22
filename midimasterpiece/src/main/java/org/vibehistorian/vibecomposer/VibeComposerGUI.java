@@ -187,9 +187,9 @@ public class VibeComposerGUI extends JFrame
 	public static List<DrumPanel> drumPanels = new ArrayList<>();
 
 	public static List<InstPanel> getAffectedPanels(int inst) {
-		List<InstPanel> affectedPanels = (arrSection == null || arrSection.getSelectedIndex() == 0)
-				? (List<InstPanel>) getInstList(inst)
-				: getSectionPanelList(inst);
+		List<InstPanel> affectedPanels = isCustomSection()
+				? getSectionPanelList(inst)
+				: (List<InstPanel>) getInstList(inst);
 		return affectedPanels;
 	}
 
@@ -1888,7 +1888,7 @@ public class VibeComposerGUI extends JFrame
 				regenerate();
 			}
 		});
-		JButton clearUserMelodySeed = makeButton("Clear Seed",
+		JButton clearUserMelodySeed = makeButton("Clear Seeds",
 				e -> getAffectedPanels(0).forEach(m -> m.setPatternSeed(0)));
 		randomMelodySameSeed = new CustomCheckBox("Same#", false);
 		randomMelodyOnRegenerate = makeCheckBox("on Manual Regen.", false, true);
@@ -2100,7 +2100,7 @@ public class VibeComposerGUI extends JFrame
 		for (int i = 0; i < 3; i++) {
 			MelodyPanel melodyPanel = (MelodyPanel) addInstPanelToLayout(0);
 			melodyPanel.setInstrument(73);
-			melodyPanel.setPanelOrder(i + 1);
+			melodyPanel.setOrderAndOffset(i + 1, i + 1);
 			if (i > 0) {
 				melodyPanel.setAccents(50);
 				melodyPanel.setFillPauses(true);
@@ -2647,10 +2647,10 @@ public class VibeComposerGUI extends JFrame
 		drumExtraSettings.add(randomDrumVelocityPatternChance);
 
 		drumExtraSettings.add(randomDrumShiftChance);
-		drumExtraSettings.add(clearPatternSeeds);
 
 		randomDrumsOverrandomize = new DetachedKnobPanel("Overrandomize", 0, 0, 100);
 		drumExtraSettings.add(randomDrumsOverrandomize);
+		drumExtraSettings.add(clearPatternSeeds);
 		drumExtraSettings.add(new PartManagerPanel(4));
 
 		toggleableComponents.add(drumExtraSettings);
@@ -7957,7 +7957,30 @@ public class VibeComposerGUI extends JFrame
 		JAXBContext context = JAXBContext.newInstance(InstPartsWrapper.getWrapperClass(partNum), InstPartsWrapper.class);
 		InstPartsWrapper<?> wrapper = (InstPartsWrapper<?>) context.createUnmarshaller()
 				.unmarshal(new FileReader(f));
-		recreateInstPanelsFromInstParts(partNum, wrapper.getParts(), clearPreviousPanels);
+		List<InstPart> parts = (List<InstPart>) wrapper.getParts();
+		int numParts = parts.size();
+		int currentNumParts = getInstList(partNum).size();
+		boolean isCustomSection = isCustomSection();
+
+		// TODO: possible part order/panel order duplication due to imports?
+		if (!clearPreviousPanels && isCustomSection) {
+			new TemporaryInfoPopup("Cannot add or remove instruments from custom sections!", 1500);
+			return;
+		}
+
+		if (clearPreviousPanels && isCustomSection && currentNumParts != numParts) {
+			if (numParts > currentNumParts) {
+				parts = parts.subList(0, currentNumParts);
+			} else {
+				parts.addAll(getAffectedPanels(partNum).subList(currentNumParts, numParts).stream()
+						.map(e -> e.toInstPart(e.getPatternSeed()))
+						.collect(Collectors.toList()));
+			}
+		}
+
+		// TODO: replace only non-locked panels if any are locked
+
+		recreateInstPanelsFromInstParts(partNum, parts, clearPreviousPanels);
 	}
 
 	public void marshalConfig(GUIConfig config, String path, int cutOff)
@@ -8534,7 +8557,7 @@ public class VibeComposerGUI extends JFrame
 		if (initializingPart != null) {
 			ip.setFromInstPart(initializingPart);
 		}
-		ip.setPanelOrder(panelOrder);
+		ip.setOrderAndOffset(panelOrder, (initializingPart != null) ? initializingPart.getOrderOffset() : panelOrder);
 
 		affectedPanels.add(panelOrder - 1, ip);
 		removeComboBoxArrows(ip);
@@ -8554,8 +8577,8 @@ public class VibeComposerGUI extends JFrame
 		return ip;
 	}
 
-	public boolean isCustomSection() {
-		return arrSection != null && !GLOBAL.equals(arrSection.getVal());
+	public static boolean isCustomSection() {
+		return arrSection != null && arrSection.getSelectedIndex() != 0 && !GLOBAL.equals(arrSection.getVal());
 	}
 
 	public static void removeInstPanel(int inst, int order, boolean singleRemove) {
@@ -8624,7 +8647,7 @@ public class VibeComposerGUI extends JFrame
 			int newPanelOrder = newPanels.get(i).getPanelOrder();
 			newPanels.get(i).setFromInstPart(parts.get(i));
 			if (!clearPreviousPanels) {
-				newPanels.get(i).setPanelOrder(newPanelOrder);
+				newPanels.get(i).setOrderAndOffset(newPanelOrder, parts.get(i).getOrderOffset());
 			}
 			if (inst == 4 && newPanels.get(i).getComboPanel() != null) {
 				newPanels.get(i).getComboPanel().reapplyHits();

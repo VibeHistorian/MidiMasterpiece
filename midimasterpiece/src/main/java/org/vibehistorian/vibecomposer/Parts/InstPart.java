@@ -62,6 +62,7 @@ public abstract class InstPart implements Cloneable {
 	protected int accents = 50;
 
 	protected int order = 1;
+	protected Integer orderOffset = null;
 
 	protected int patternSeed = 0;
 	protected RhythmPattern pattern = RhythmPattern.FULL;
@@ -84,6 +85,8 @@ public abstract class InstPart implements Cloneable {
 
 	public void setFromPanel(InstPanel panel, int lastRandomSeed) {
 		setInstrument(panel.getInstrument());
+		setOrderOffset(panel.getOrderOffset());
+		setOrder(panel.getPanelOrder());
 
 		setHitsPerPattern(panel.getHitsPerPattern());
 		setChordSpan(panel.getChordSpan());
@@ -421,7 +424,7 @@ public abstract class InstPart implements Cloneable {
 
 
 	public String partInfo() {
-		return "Part: " + getPartNum() + ", order: " + getOrder();
+		return "Part: " + getPartNum() + ", order: " + getOrder() + ", offset: " + getOrderOffset();
 	}
 
 	public int getFeedbackCount() {
@@ -446,5 +449,13 @@ public abstract class InstPart implements Cloneable {
 
 	public void setFeedbackVol(int feedbackVol) {
 		this.feedbackVol = feedbackVol;
+	}
+
+	public Integer getOrderOffset() {
+		return orderOffset;
+	}
+
+	public void setOrderOffset(Integer orderOffset) {
+		this.orderOffset = orderOffset;
 	}
 }

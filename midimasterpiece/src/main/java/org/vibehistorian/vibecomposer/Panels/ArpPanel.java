@@ -41,7 +41,7 @@ public class ArpPanel extends InstPanel {
 		volSlider.setDefaultValue(50);
 		this.add(volSlider);
 		this.add(panSlider);
-		this.add(new JLabel("#"));
+		//this.add(new JLabel("#"));
 		this.add(panelOrder);
 		addDefaultInstrumentControls();
 		addDefaultPanelButtons();
@@ -137,9 +137,8 @@ public class ArpPanel extends InstPanel {
 
 	public ArpPart toArpPart(int lastRandomSeed) {
 		ArpPart part = new ArpPart();
-		part.setArpPattern(getArpPattern());
 		part.setFromPanel(this, lastRandomSeed);
-		part.setOrder(getPanelOrder());
+		part.setArpPattern(getArpPattern());
 		part.setArpPatternRotate(getArpPatternRotate());
 		part.setArpPatternCustom(
 				arpPattern.getVal() == ArpPattern.CUSTOM ? arpPattern.getCustomValues() : null);
@@ -152,7 +151,6 @@ public class ArpPanel extends InstPanel {
 		ArpPart part = (ArpPart) p;
 		setArpPattern(part.getArpPattern());
 		setDefaultsFromInstPart(part);
-		setPanelOrder(part.getOrder());
 		setArpPatternRotate(part.getArpPatternRotate());
 		if (part.getArpPattern() == ArpPattern.CUSTOM) {
 			arpPattern.setCustomValues(part.getArpPatternCustom());

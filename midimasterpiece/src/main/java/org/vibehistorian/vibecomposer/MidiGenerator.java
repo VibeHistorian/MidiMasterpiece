@@ -2024,7 +2024,7 @@ public class MidiGenerator implements JMC {
 			Set<Integer> presences = sec.getPresence(4);
 			for (int i = 0; i < gc.getDrumParts().size(); i++) {
 				DrumPart dp = gc.getDrumParts().get(i);
-				variationGen.setSeed(arrSeed + 300 + dp.getOrder());
+				variationGen.setSeed(arrSeed + 300 + dp.getOrderOffset());
 
 				boolean added = presences.contains(dp.getOrder());
 				if (added && !dp.isMuted()) {
@@ -2070,8 +2070,8 @@ public class MidiGenerator implements JMC {
 			Set<Integer> presences = sec.getPresence(1);
 			for (int i = 0; i < gc.getBassParts().size(); i++) {
 				BassPart bp = gc.getBassParts().get(i);
-				rand.setSeed(arrSeed + 50 + bp.getOrder());
-				variationGen.setSeed(arrSeed + 50 + bp.getOrder());
+				rand.setSeed(arrSeed + 50 + bp.getOrderOffset());
+				variationGen.setSeed(arrSeed + 50 + bp.getOrderOffset());
 				boolean added = (overridden && presences.contains(bp.getOrder()))
 						|| (!overridden && rand.nextInt(100) < sec.getBassChance());
 				added &= gc.getArrangement().isPartInclusion(1, i, notesSeedOffset);
@@ -2086,8 +2086,8 @@ public class MidiGenerator implements JMC {
 			Set<Integer> presences = sec.getPresence(2);
 			for (int i = 0; i < gc.getChordParts().size(); i++) {
 				ChordPart cp = gc.getChordParts().get(i);
-				rand.setSeed(arrSeed + 100 + cp.getOrder());
-				variationGen.setSeed(arrSeed + 100 + cp.getOrder());
+				rand.setSeed(arrSeed + 100 + cp.getOrderOffset());
+				variationGen.setSeed(arrSeed + 100 + cp.getOrderOffset());
 				boolean added = (overridden && presences.contains(cp.getOrder()))
 						|| (!overridden && rand.nextInt(100) < sec.getChordChance());
 				added &= gc.getArrangement().isPartInclusion(2, i, notesSeedOffset);
@@ -2102,8 +2102,8 @@ public class MidiGenerator implements JMC {
 			Set<Integer> presences = sec.getPresence(3);
 			for (int i = 0; i < gc.getArpParts().size(); i++) {
 				ArpPart ap = gc.getArpParts().get(i);
-				rand.setSeed(arrSeed + 200 + ap.getOrder());
-				variationGen.setSeed(arrSeed + 200 + ap.getOrder());
+				rand.setSeed(arrSeed + 200 + ap.getOrderOffset());
+				variationGen.setSeed(arrSeed + 200 + ap.getOrderOffset());
 				// if arp1 supports melody with same instrument, always introduce it in second half
 				boolean added = (overridden && presences.contains(ap.getOrder())) || (!overridden
 						&& rand.nextInt(100) < sec.getArpChance() && i > 0 && !ap.isMuted());
@@ -2123,7 +2123,7 @@ public class MidiGenerator implements JMC {
 			Set<Integer> presences = sec.getPresence(4);
 			for (int i = 0; i < gc.getDrumParts().size(); i++) {
 				DrumPart dp = gc.getDrumParts().get(i);
-				rand.setSeed(arrSeed + 300 + dp.getOrder());
+				rand.setSeed(arrSeed + 300 + dp.getOrderOffset());
 
 				// multiply drum chance using section note type + what drum it is
 				int drumChanceMultiplier = 1;
@@ -2829,11 +2829,11 @@ public class MidiGenerator implements JMC {
 
 		int measures = sec.getMeasures();
 
-		int orderSeed = ip.getPatternSeedWithPartOffset() + ip.getOrder();
+		int orderSeed = ip.getPatternSeedWithPartOffset() + ip.getOrderOffset();
 		Phrase phr = new PhraseExt(2, ip.getOrder(), secOrder);
 		List<Chord> chords = new ArrayList<>();
 		Random variationGenerator = new Random(
-				gc.getArrangement().getSeed() + ip.getOrder() + sec.getTypeSeedOffset());
+				gc.getArrangement().getSeed() + ip.getOrderOffset() + sec.getTypeSeedOffset());
 		Random flamGenerator = new Random(orderSeed + 30);
 		Random pauseGenerator = new Random(orderSeed + 50);
 		// chord strum
@@ -3222,7 +3222,7 @@ public class MidiGenerator implements JMC {
 		Phrase phr = new PhraseExt(3, ip.getOrder(), secOrder);
 
 		ArpPart apClone = (ArpPart) ip.clone();
-		int seed = ip.getPatternSeedWithPartOffset() + ip.getOrder();
+		int seed = ip.getPatternSeedWithPartOffset() + ip.getOrderOffset();
 		Map<String, List<Integer>> arpMap = generateArpMap(seed, ip.equals(gc.getArpParts().get(0)),
 				ip);
 
@@ -3587,7 +3587,7 @@ public class MidiGenerator implements JMC {
 		List<Integer> drumVelocityPattern = generateDrumVelocityPatternFromPart(sec, ip);
 
 		Random drumFillGenerator = new Random(
-				ip.getPatternSeedWithPartOffset() + ip.getOrder() + sec.getTypeMelodyOffset());
+				ip.getPatternSeedWithPartOffset() + ip.getOrderOffset() + sec.getTypeMelodyOffset());
 		// bar iter
 		int hits = ip.getHitsPerPattern();
 		int swingPercentAmount = (hits % 2 == 0) ? ip.getSwingPercent() : 50;
@@ -3598,7 +3598,7 @@ public class MidiGenerator implements JMC {
 		for (int o = 0; o < measures; o++) {
 			// exceptions are generated the same for each bar, but differently for each pattern within bar (if there is more than 1)
 			Random exceptionGenerator = new Random(
-					ip.getPatternSeedWithPartOffset() + ip.getOrder());
+					ip.getPatternSeedWithPartOffset() + ip.getOrderOffset());
 			int chordSpan = ip.getChordSpan();
 			int oneChordPatternSize = drumPattern.size() / chordSpan;
 			boolean ignoreChordSpanFill = false;
@@ -3832,7 +3832,7 @@ public class MidiGenerator implements JMC {
 		if (chanceMultipliers == null) {
 			chanceMultipliers = new ArrayList<>();
 		}
-		Random varGenerator = new Random(gc.getArrangement().getSeed() + instPart.getOrder()
+		Random varGenerator = new Random(gc.getArrangement().getSeed() + instPart.getOrderOffset()
 				+ sec.getTypeSeedOffset() + part * 1000);
 
 		int numVars = Section.variationDescriptions[part].length - 2;
@@ -4074,7 +4074,7 @@ public class MidiGenerator implements JMC {
 
 	public static List<Integer> generateDrumPatternFromPart(DrumPart dp) {
 		Random uiGenerator1drumPattern = new Random(
-				dp.getPatternSeedWithPartOffset() + dp.getOrder() - 1);
+				dp.getPatternSeedWithPartOffset() + dp.getOrderOffset() - 1);
 		List<Integer> premadePattern = null;
 		if (melodyNotePattern != null && dp.getPattern() == RhythmPattern.MELODY1) {
 			//LG.d("Setting note pattern!");
@@ -4115,7 +4115,7 @@ public class MidiGenerator implements JMC {
 
 	private List<Integer> generateDrumVelocityPatternFromPart(Section sec, DrumPart dp) {
 		Random uiGenerator1drumVelocityPattern = new Random(
-				dp.getPatternSeedWithPartOffset() + dp.getOrder());
+				dp.getPatternSeedWithPartOffset() + dp.getOrderOffset());
 		List<Integer> drumVelocityPattern = new ArrayList<>();
 		int multiplier = (gc.isScaleMidiVelocityInArrangement()) ? sec.getVol(4) : 100;
 		if (dp.getCustomVelocities() != null

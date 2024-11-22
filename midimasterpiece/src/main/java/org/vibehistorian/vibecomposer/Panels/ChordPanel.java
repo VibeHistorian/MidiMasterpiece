@@ -46,7 +46,7 @@ public class ChordPanel extends InstPanel {
 		volSlider.setDefaultValue(40);
 		this.add(volSlider);
 		this.add(panSlider);
-		this.add(new JLabel("#"));
+		//this.add(new JLabel("#"));
 		this.add(panelOrder);
 		addDefaultInstrumentControls();
 		this.add(instPoolPicker);
@@ -181,7 +181,6 @@ public class ChordPanel extends InstPanel {
 
 		part.setInstPool(getInstPool());
 		part.setStrumType(getStrumType());
-		part.setOrder(getPanelOrder());
 		return part;
 	}
 
@@ -197,8 +196,6 @@ public class ChordPanel extends InstPanel {
 		setStrumPauseChance(part.getStrumPauseChance());
 		setPatternJoinMode(part.getPatternJoinMode());
 		setStrumType(part.getStrumType());
-
-		setPanelOrder(part.getOrder());
 
 	}
 
