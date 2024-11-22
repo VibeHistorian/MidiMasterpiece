@@ -13,7 +13,9 @@ import javax.xml.bind.JAXBException;
 import java.awt.event.ItemEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 
 public class PartManagerPanel extends TransparentablePanel {
@@ -35,14 +37,18 @@ public class PartManagerPanel extends TransparentablePanel {
         partName.setText("Presets:");
 
         initPresetField(folderName);
-        initPresetBox(folderName);
         add(partName);
         add(newPresetName);
         add(partPresetBox);
         add(overwriteExistingCheckbox);
+
+        Timer timer = new Timer(1000, e -> initPresetBox(folderName));
+        timer.setRepeats(false);
+        timer.start();
     }
 
     private void initPresetField(String folderName) {
+        ScrollComboBox.addAll(new String[] { OMNI.EMPTYCOMBO }, partPresetBox);
         newPresetName.addKeyListener(new KeyAdapter() {
             @Override
             public void keyReleased(KeyEvent e) {
@@ -54,8 +60,8 @@ public class PartManagerPanel extends TransparentablePanel {
                     try {
                         String dirPath = makeSavedDir.getPath().toString();
                         String fileName = newPresetName.getText().replaceAll(".xml", "");
-                        VibeComposerGUI.marshalParts(dirPath + "/" + fileName + ".xml", part);
-                        partPresetBox.addItem(fileName);
+                        int numParts = VibeComposerGUI.marshalParts(dirPath + "/" + fileName + ".xml", part);
+                        partPresetBox.addItem(fileName + " [" + numParts + "]");
                         newPresetName.setText("");
                     } catch (Exception ex) {
                         new TemporaryInfoPopup("Saving failed!", 1500);
@@ -67,7 +73,6 @@ public class PartManagerPanel extends TransparentablePanel {
     }
 
     private void initPresetBox(String folderName) {
-        ScrollComboBox.addAll(new String[] { OMNI.EMPTYCOMBO }, partPresetBox);
         File folder = new File("PartPresets/" + folderName);
         if (folder.exists()) {
             File[] listOfFiles = folder.listFiles();
@@ -78,8 +83,13 @@ public class PartManagerPanel extends TransparentablePanel {
                     if (pos > 0 && pos < (fileName.length() - 1)) {
                         fileName = fileName.substring(0, pos);
                     }
-
-                    partPresetBox.addItem(fileName);
+                    try {
+                        int numOfParts = countStringOccurrences(f, "</" + VibeComposerGUI.instPartNames[part] + "Part>");
+                        partPresetBox.addItem(fileName + " [" + numOfParts + "]");
+                    } catch (IOException e) {
+                        LG.e(e);
+                        new TemporaryInfoPopup("Could not initialize presets for part: " + part, 3000);
+                    }
                 }
             }
         }
@@ -91,11 +101,11 @@ public class PartManagerPanel extends TransparentablePanel {
                 if (OMNI.EMPTYCOMBO.equals(item)) {
                     return;
                 }
-
-                LG.i("Trying to load part preset: " + folderName + "/" + item);
+                String itemName = item.split(" \\[")[0];
+                LG.i("Trying to load part preset: " + folderName + "/" + itemName);
 
                 // check if file exists
-                File loadedFile = new File("PartPresets/" + folderName + "/" + item + ".xml");
+                File loadedFile = new File("PartPresets/" + folderName + "/" + itemName + ".xml");
                 if (loadedFile.exists()) {
                     try {
                         VibeComposerGUI.vibeComposerGUI.unmarshallParts(loadedFile, part, overwriteExistingCheckbox.isSelected());
@@ -113,6 +123,31 @@ public class PartManagerPanel extends TransparentablePanel {
                 LG.i("Loaded preset: " + item);
             }
         });
+    }
+
+    private static int countStringOccurrences(File file, String searchString) throws IOException {
+        if (file == null || !file.exists() || searchString == null || searchString.isEmpty()) {
+            throw new IllegalArgumentException("Invalid file or search string.");
+        }
+
+        int count = 0;
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                count += countOccurrencesInLine(line, searchString);
+            }
+        }
+        return count;
+    }
+
+    private static int countOccurrencesInLine(String line, String searchString) {
+        int count = 0;
+        int index = 0;
+        while ((index = line.indexOf(searchString, index)) != -1) {
+            count++;
+            index += searchString.length(); // Move past the current occurrence
+        }
+        return count;
     }
 
 }
