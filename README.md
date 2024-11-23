@@ -1,23 +1,25 @@
-# VibeComposer 2.4
+# VibeComposer 2.5
 ## Interactive Music Generator
 
-![VibeComposer Default UI Preview](https://i.imgur.com/ZslPA3T.png)
+![VibeComposer Default UI Preview](https://i.imgur.com/Q2P60QS.png)
 
-#### Arranged Track Examples (v2.4): 
-- [Mistake](https://soundcloud.com/vibehistorian/mistake-radio-edit-vibecomposer-v24-track-1)
+#### Arranged Track Examples: 
+- [Mistake](https://soundcloud.com/vibehistorian/mistake-radio-edit)
+- [Anti-Bodies](https://soundcloud.com/vibehistorian/anti_bodies)
+- [Good Night](https://soundcloud.com/vibehistorian/good-night)
 
 #### How to run it:
 1. [Download and install JRE - Java Runtime Environment (at least ver. 1.8.0)](https://java.com/en/download/)
-2. [Download the latest release (.jar)](https://github.com/VibeHistorian/VibeComposer/releases/download/v2.4-beta/VibeComposer-2.4-beta-JAR.jar) (.exe format available under Releases - Assets (right sidebar) if preferred)
+2. [Download the latest release (.jar)](https://github.com/VibeHistorian/VibeComposer/releases/download/v2.5-beta/VibeComposer-2.5-beta-JAR.jar) (.exe format available under Releases - Assets (right sidebar) if preferred)
 3. Double-click to run
   > Note: (Windows-only) If double-clicking the .jar doesn't work: download VibeComposerLauncher.bat from Releases, place it in the same folder as the .jar and run that instead.
   
   > If you run into any issues, feel free to contact me (email/discord below).
 
 #### How to use it:
-1. Click the big golden 'Compose' button to compose a new song preview.
+1. Click the 'Compose' button to compose a new song preview.
 
-    -  Make any adjustments you want, then click 'Regenerate' to hear the new changes. Some knobs/comboboxes react instantly without needing to Regenerate (for convenience).
+    -  Adjust settings -> click 'Regenerate' to hear the new changes. Some knobs/selectors react instantly without needing to click Regenerate (for convenience).
 
     -  If you like what you hear, you can enable Arrangement by checking 'ARRANGE' and clicking 'Regenerate' again, 
      which creates a fully 'arranged' track with varying energy levels and new variations.
@@ -37,8 +39,6 @@
 	-- this should create 2 jars and 1 wrapped exe
 
 #### Arrangement examples made with earlier versions of VibeComposer: 
-- https://soundcloud.com/vibehistorian/anti_bodies
-- https://soundcloud.com/vibehistorian/good-night
 - https://soundcloud.com/vibehistorian/winter-tale
 - https://soundcloud.com/vibehistorian/anti-hero
 - https://soundcloud.com/vibehistorian/a-world-beyond
