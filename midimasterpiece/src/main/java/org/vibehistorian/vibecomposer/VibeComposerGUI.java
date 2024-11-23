@@ -7961,30 +7961,50 @@ public class VibeComposerGUI extends JFrame
 		InstPartsWrapper<?> wrapper = (InstPartsWrapper<?>) context.createUnmarshaller()
 				.unmarshal(new FileReader(f));
 		List<InstPart> parts = (List<InstPart>) wrapper.getParts();
-		int numParts = parts.size();
-		int currentNumParts = getInstList(partNum).size();
 		boolean isCustomSection = isCustomSection();
 
-		// TODO: possible part order/panel order duplication due to imports?
 		if (!clearPreviousPanels && isCustomSection) {
-			new TemporaryInfoPopup("Cannot add or remove instruments from custom sections!", 1500);
+			new TemporaryInfoPopup("Cannot change # of instruments in custom sections!", 1500);
 			return;
 		}
 
-		if (clearPreviousPanels && isCustomSection && currentNumParts != numParts) {
-			if (numParts > currentNumParts) {
-				parts = parts.subList(0, currentNumParts);
-			} else {
-				parts.addAll(getAffectedPanels(partNum).subList(numParts, currentNumParts).stream()
-						.map(e -> e.toInstPart(e.getPatternSeed()))
-						.collect(Collectors.toList()));
+		List<InstPanel> currentPanels = getAffectedPanels(partNum);
+		List<InstPart> lockedParts = currentPanels.stream().filter(e -> e.getLockInst())
+				.map(e -> e.toInstPart(e.getPatternSeed())).collect(Collectors.toList());
+		Map<Integer, List<InstPart>> originalLockedPartsOrder = lockedParts.stream().collect(Collectors.groupingBy(e -> e.getOrder()-1));
+		List<InstPart> nonLockedParts = currentPanels.stream().filter(e -> !e.getLockInst())
+				.map(e -> e.toInstPart(e.getPatternSeed())).collect(Collectors.toList());
+
+		int numParts = parts.size();
+		int numPartsToReplace = nonLockedParts.size();
+
+		if (clearPreviousPanels) {
+			if (isCustomSection && numPartsToReplace != numParts) {
+				if (numParts > numPartsToReplace) {
+					parts = parts.subList(0, numPartsToReplace);
+				} else {
+					parts.addAll(nonLockedParts.subList(numParts, numPartsToReplace));
+				}
 			}
 		}
-		for (int i = 0; i < parts.size(); i++) {
-			parts.get(i).setOrder(i + 1);
+
+		// restore original order/placement of locked parts
+		if (clearPreviousPanels) {
+			// Iterate through the entries sorted by key (ascending order)
+			List<InstPart> finalParts = parts;
+			originalLockedPartsOrder.entrySet().stream()
+					.sorted(Map.Entry.comparingByKey())
+					.forEach(entry -> {
+						int newIndex = Math.min(finalParts.size(), entry.getKey());
+						finalParts.add(newIndex, entry.getValue().get(0));
+					});
 		}
 
-		// TODO: replace only non-locked panels if any are locked
+		int startingOrder = clearPreviousPanels ? 0 : numPartsToReplace;
+		int endingSize = parts.size() + startingOrder;
+		for (int i = startingOrder; i < endingSize; i++) {
+			parts.get(i - startingOrder).setOrder(i + 1);
+		}
 
 		recreateInstPanelsFromInstParts(partNum, parts, clearPreviousPanels);
 	}
