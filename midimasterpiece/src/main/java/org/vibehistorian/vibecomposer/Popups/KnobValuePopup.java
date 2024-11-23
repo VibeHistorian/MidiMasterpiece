@@ -75,7 +75,8 @@ public class KnobValuePopup extends CloseablePopup {
 							knob.setValue(val);
 							knob.repaint();
 						} else {
-							if (knob.getMin() <= val && knob.getMax() >= val) {
+							if (VibeComposerGUI.allowValuesOutOfRange.isSelected() ||
+									(knob.getMin() <= val && val <= knob.getMax())) {
 								knob.setValue(val);
 							} else {
 								knob.setValue(OMNI.clamp(val, knob.getMin(), knob.getMax()));

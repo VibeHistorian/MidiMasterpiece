@@ -352,6 +352,8 @@ public class VibeComposerGUI extends JFrame
 	JCheckBox bottomUpReverseDrumPanels;
 	JCheckBox orderedTransposeGeneration;
 	JCheckBox configHistoryStoreRegeneratedTracks;
+	public static JCheckBox patternApplyPausesWhenGenerating;
+	public static JCheckBox allowValuesOutOfRange;
 
 
 	// add/skip instruments
@@ -396,7 +398,6 @@ public class VibeComposerGUI extends JFrame
 	JCheckBox melodyAvoidChordJumpsLegacy;
 	JCheckBox melodyUseDirectionsFromProgression;
 	JCheckBox melodyPatternFlip;
-	public static JCheckBox patternApplyPausesWhenGenerating;
 	public static ScrollComboBox<MelodyUtils.NoteTargetDirection> noteTargetDirectionChoice;
 	public static ScrollComboBox<String> melodyBlockTargetMode;
 	JCheckBox melodyTargetNotesRandomizeOnCompose;
@@ -1528,6 +1529,7 @@ public class VibeComposerGUI extends JFrame
 				"Track History - Include Regenerated Tracks", true);
 		melodyPatternFlip = new CustomCheckBox("Inverse Melody1 Pattern", false);
 		patternApplyPausesWhenGenerating = new CustomCheckBox("Apply Pause% on Generate", true);
+		allowValuesOutOfRange = new CustomCheckBox("(Experimental!) Allow Knob Values Out of Range", false);
 
 
 		JPanel keyChangePanel = new JPanel();
@@ -1548,6 +1550,7 @@ public class VibeComposerGUI extends JFrame
 		panelGenerationSettingsPanel.add(configHistoryStoreRegeneratedTracks);
 		//panelGenerationSettingsPanel.add(melodyPatternFlip); -- pattern flip is now also available per-instrument..
 		panelGenerationSettingsPanel.add(patternApplyPausesWhenGenerating);
+		panelGenerationSettingsPanel.add(allowValuesOutOfRange);
 		panelGenerationSettingsPanel.add(keyChangePanel);
 	}
 
@@ -7972,10 +7975,13 @@ public class VibeComposerGUI extends JFrame
 			if (numParts > currentNumParts) {
 				parts = parts.subList(0, currentNumParts);
 			} else {
-				parts.addAll(getAffectedPanels(partNum).subList(currentNumParts, numParts).stream()
+				parts.addAll(getAffectedPanels(partNum).subList(numParts, currentNumParts).stream()
 						.map(e -> e.toInstPart(e.getPatternSeed()))
 						.collect(Collectors.toList()));
 			}
+		}
+		for (int i = 0; i < parts.size(); i++) {
+			parts.get(i).setOrder(i + 1);
 		}
 
 		// TODO: replace only non-locked panels if any are locked
@@ -8147,6 +8153,7 @@ public class VibeComposerGUI extends JFrame
 		cs.add(reuseMidiChannelAfterCopy);
 		cs.add(transposeNotePreview);
 		cs.add(moveStartToCustomizedSection);
+		cs.add(allowValuesOutOfRange);
 
 		return cs;
 	}

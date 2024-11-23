@@ -345,7 +345,7 @@ public class JKnob extends JComponent
 		int intVal = min + (int) Math.round(val * diff);
 		int smallestDiff = Integer.MAX_VALUE;
 		int smallestInt = 0;
-		if (tickSpacing > 0) {
+		if (tickSpacing > 0 && !VibeComposerGUI.allowValuesOutOfRange.isSelected()) {
 			for (Integer i : tickThresholds) {
 				int currentDiff = Math.abs(intVal - i);
 				if (smallestDiff > currentDiff) {
@@ -739,7 +739,7 @@ public class JKnob extends JComponent
 	}
 
 	public void setAllowValuesOutsideRange(boolean b) {
-		allowValuesOutsideRange = true;
+		allowValuesOutsideRange = b;
 	}
 
 	public boolean isRegenerating() {
