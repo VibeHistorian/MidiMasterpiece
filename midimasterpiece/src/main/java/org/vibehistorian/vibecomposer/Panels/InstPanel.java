@@ -19,12 +19,31 @@ see <https://www.gnu.org/licenses/>.
 
 package org.vibehistorian.vibecomposer.Panels;
 
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Container;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.awt.Insets;
+import org.apache.commons.lang3.tuple.Pair;
+import org.vibehistorian.vibecomposer.Components.CheckButton;
+import org.vibehistorian.vibecomposer.Components.InstComboBox;
+import org.vibehistorian.vibecomposer.Components.JKnob;
+import org.vibehistorian.vibecomposer.Components.MidiMVI;
+import org.vibehistorian.vibecomposer.Components.RandomValueButton;
+import org.vibehistorian.vibecomposer.Components.RangeSlider;
+import org.vibehistorian.vibecomposer.Components.ScrollComboBox;
+import org.vibehistorian.vibecomposer.Components.ScrollComboPanel;
+import org.vibehistorian.vibecomposer.Components.VeloRect;
+import org.vibehistorian.vibecomposer.Enums.ChordSpanFill;
+import org.vibehistorian.vibecomposer.Enums.RhythmPattern;
+import org.vibehistorian.vibecomposer.Helpers.PhraseNotes;
+import org.vibehistorian.vibecomposer.InstUtils;
+import org.vibehistorian.vibecomposer.LG;
+import org.vibehistorian.vibecomposer.MidiUtils;
+import org.vibehistorian.vibecomposer.OMNI;
+import org.vibehistorian.vibecomposer.Panels.SoloMuter.State;
+import org.vibehistorian.vibecomposer.Parts.InstPart;
+import org.vibehistorian.vibecomposer.Section;
+import org.vibehistorian.vibecomposer.VibeComposerGUI;
+
+import javax.swing.*;
+import javax.swing.border.BevelBorder;
+import java.awt.*;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -38,36 +57,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.SwingUtilities;
-import javax.swing.border.BevelBorder;
-
-import org.apache.commons.lang3.tuple.Pair;
-import org.vibehistorian.vibecomposer.InstUtils;
-import org.vibehistorian.vibecomposer.LG;
-import org.vibehistorian.vibecomposer.MidiUtils;
-import org.vibehistorian.vibecomposer.OMNI;
-import org.vibehistorian.vibecomposer.Section;
-import org.vibehistorian.vibecomposer.VibeComposerGUI;
-import org.vibehistorian.vibecomposer.Components.CheckButton;
-import org.vibehistorian.vibecomposer.Components.InstComboBox;
-import org.vibehistorian.vibecomposer.Components.JKnob;
-import org.vibehistorian.vibecomposer.Components.MidiMVI;
-import org.vibehistorian.vibecomposer.Components.RandomValueButton;
-import org.vibehistorian.vibecomposer.Components.RangeSlider;
-import org.vibehistorian.vibecomposer.Components.ScrollComboBox;
-import org.vibehistorian.vibecomposer.Components.ScrollComboPanel;
-import org.vibehistorian.vibecomposer.Components.VeloRect;
-import org.vibehistorian.vibecomposer.Enums.ChordSpanFill;
-import org.vibehistorian.vibecomposer.Enums.RhythmPattern;
-import org.vibehistorian.vibecomposer.Helpers.PhraseNotes;
-import org.vibehistorian.vibecomposer.Panels.SoloMuter.State;
-import org.vibehistorian.vibecomposer.Parts.InstPart;
 
 public abstract class InstPanel extends JPanel {
 
@@ -110,6 +99,7 @@ public abstract class InstPanel extends JPanel {
 	protected KnobPanel accents = new KnobPanel("Accent", 100);
 
 	protected JLabel panelOrder = new JLabel("1");
+	protected int orderOffset = 1;
 
 	protected JLabel patternSeedLabel = new JLabel("Seed");
 	protected RandomValueButton patternSeed = new RandomValueButton(0);
@@ -122,8 +112,8 @@ public abstract class InstPanel extends JPanel {
 	protected CheckButton lockInst = new CheckButton("<html>&#x1F512;</html>", false);
 	protected CheckButton muteInst = new CheckButton("Ex", false);
 
-	protected VeloRect volSlider = new VeloRect(0, 100, 100);
-	protected VeloRect panSlider = new VeloRect(0, 100, 50);
+	protected VeloRect volSlider = VeloRect.percent(100);
+	protected VeloRect panSlider = VeloRect.percent(50);
 
 	protected ScrollComboBox<Integer> midiChannel = new ScrollComboBox<>();
 
@@ -156,7 +146,16 @@ public abstract class InstPanel extends JPanel {
 		for (ChordSpanFill fill : ChordSpanFill.values()) {
 			chordSpanFill.addItem(fill);
 		}
-		panelOrder.setPreferredSize(new Dimension(20, SMALL_BTN_HEIGHT));
+		panelOrder.setPreferredSize(new Dimension(30, SMALL_BTN_HEIGHT));
+		panelOrder.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseReleased(MouseEvent e) {
+				if (SwingUtilities.isRightMouseButton(e)) {
+					int orderAndOffset = getPanelOrder();
+					setOrderAndOffset(orderAndOffset, orderAndOffset);
+				}
+			}
+		});
 
 		setBorder(BorderFactory.createBevelBorder(BevelBorder.LOWERED));
 		//volSlider.setMaximum(100);
@@ -176,11 +175,6 @@ public abstract class InstPanel extends JPanel {
 				pattern.addItem(d);
 			}
 		}
-
-		stretchPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 0, 0));
-		stretchPanel.setMaximumSize(new Dimension(3000, 50));
-		stretchPanel.add(stretchEnabled);
-		stretchPanel.add(chordNotesStretch);
 
 		chordSpanFillPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 0, 0));
 		chordSpanFillPanel.setMaximumSize(new Dimension(3000, 50));
@@ -228,21 +222,20 @@ public abstract class InstPanel extends JPanel {
 						VibeComposerGUI.instrumentTabPane.getSelectedIndex(), part, true);
 				newPanel.setPatternSeed(getPatternSeed());
 
-				// todo checkbox set cc'd panel's midichannel?
-				if (true) {
-					newPanel.setMidiChannel(getMidiChannel());
-				} else {
+				// for MMB, intention is to split into 2 to modify the 2 pattern halves separately, but typically for one instrument
+				if (!VibeComposerGUI.reuseMidiChannelAfterCopy.isSelected() && !SwingUtilities.isMiddleMouseButton(e)) {
 					switch (VibeComposerGUI.instrumentTabPane.getSelectedIndex()) {
+					case 0:
+						newPanel.setNextFreeMidiChannel();
+						newPanel.setPanByOrder(3);
+						break;
 					case 2:
-						newPanel.setMidiChannel(11 + (newPanel.getPanelOrder() - 1) % 5);
+						newPanel.setNextFreeMidiChannel();
 						newPanel.setPanByOrder(5);
 						break;
 					case 3:
-						newPanel.setMidiChannel(2 + (newPanel.getPanelOrder() - 1) % 7);
+						newPanel.setNextFreeMidiChannel();
 						newPanel.setPanByOrder(7);
-						break;
-					case 4:
-						newPanel.getComboPanel().reapplyHits();
 						break;
 					default:
 						break;
@@ -300,6 +293,17 @@ public abstract class InstPanel extends JPanel {
 
 		addBackgroundsForKnobs();
 		toggleComponentTexts(VibeComposerGUI.isShowingTextInKnobs);
+	}
+
+	public void setNextFreeMidiChannel() {
+		int part = this.getPartNum();
+		int order = this.getPanelOrder();
+		List<InstPanel> instPanels = (List<InstPanel>) VibeComposerGUI.getInstList(part);
+		List<Integer> typicalChannels = VibeComposerGUI.TYPICAL_MIDI_CH.get(part);
+		Set<Integer> usedChannels = instPanels.stream().filter(e -> !this.equals(e)).map(e -> e.getMidiChannel()).collect(Collectors.toSet());
+
+		setMidiChannel(typicalChannels.stream().filter(e -> !usedChannels.contains(e)).findFirst()
+				.orElse(VibeComposerGUI.TYPICAL_MIDI_CH_START.get(part) + (order - 1) % typicalChannels.size()));
 	}
 
 	public void addDefaultInstrumentControls() {
@@ -388,6 +392,8 @@ public abstract class InstPanel extends JPanel {
 
 	public void setDefaultsFromInstPart(InstPart part) {
 		setInstrument(part.getInstrument());
+
+		setOrderAndOffset(part.getOrder(), part.getOrderOffset());
 
 		setHitsPerPattern(part.getHitsPerPattern());
 		setChordSpan(part.getChordSpan());
@@ -639,12 +645,24 @@ public abstract class InstPanel extends JPanel {
 		accents.setInt(val);
 	}
 
+	public JLabel getPanelOrderLabel() {
+		return panelOrder;
+	}
+
 	public int getPanelOrder() {
-		return Integer.valueOf(panelOrder.getText());
+		return Integer.valueOf(panelOrder.getText().split("\\(")[0]);
 	}
 
 	public void setPanelOrder(int val) {
-		this.panelOrder.setText("" + val);
+		setOrderAndOffset(val, orderOffset);
+	}
+
+	public void setOrderAndOffset(int order, Integer offset) {
+		if (offset == null) {
+			offset = order;
+		}
+		setOrderOffset(offset);
+		this.panelOrder.setText(order == offset ? String.valueOf(order) : (order + "(" + offset + ")"));
 	}
 
 	public boolean getFillFlip() {
@@ -756,9 +774,19 @@ public abstract class InstPanel extends JPanel {
 	}
 
 	public void setPanByOrder(int order, int panelLimit) {
-		order--;
-		getPanSlider().setValue(
-				50 + (order % 2 == 0 ? 1 : -1) * (order % panelLimit) * (49 / panelLimit));
+		// only uneven panels are distributed evenly with a middle value of 50
+		if (order < 2 || panelLimit < 3 || panelLimit % 2 == 0) {
+			getPanSlider().setValue(50);
+			return;
+		}
+
+		int multiplier = order-1;
+		multiplier %= panelLimit;
+		multiplier = (multiplier % 2 == 1) ? ((multiplier + 1) / 2) : (-multiplier / 2);
+
+		int sideValue = 50 / (panelLimit-1);
+
+		getPanSlider().setValue(50 + sideValue * multiplier);
 	}
 
 	public void applyPauseChance(Random randGen) {
@@ -822,6 +850,18 @@ public abstract class InstPanel extends JPanel {
 
 	public void setFeedbackVol(int val) {
 		this.feedbackVol.setInt(val);
+	}
+
+	public int getOrderOffset() {
+		return orderOffset;
+	}
+
+	public void setOrderOffset(int orderOffset) {
+		this.orderOffset = orderOffset;
+	}
+
+	public MidiMVI getMidiMVI() {
+		return midiMVI;
 	}
 
 	public String panelInfo() {

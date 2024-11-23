@@ -1,15 +1,15 @@
 package org.vibehistorian.vibecomposer.Popups;
 
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
-import java.awt.event.WindowEvent;
-import java.awt.event.WindowListener;
-
+import org.vibehistorian.vibecomposer.Components.JKnob;
 import org.vibehistorian.vibecomposer.LG;
 import org.vibehistorian.vibecomposer.OMNI;
-import org.vibehistorian.vibecomposer.VibeComposerGUI;
-import org.vibehistorian.vibecomposer.Components.JKnob;
 import org.vibehistorian.vibecomposer.Panels.NumPanel;
+import org.vibehistorian.vibecomposer.VibeComposerGUI;
+
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
 
 public class KnobValuePopup extends CloseablePopup {
 	private JKnob knob = null;
@@ -27,28 +27,13 @@ public class KnobValuePopup extends CloseablePopup {
 		numPanel.getValueRect().setVisible(false);
 		numPanel.setAllowValuesOutsideRange(allowValuesOutsideRange);
 		numPanel.setParentPopup(this);
-		numPanel.getTextfield().addKeyListener(new KeyListener() {
-
-			@Override
-			public void keyTyped(KeyEvent e) {
-
-
-			}
-
-			@Override
-			public void keyPressed(KeyEvent e) {
-				// Auto-generated method stub
-
-			}
-
+		numPanel.getTextfield().addKeyListener(new KeyAdapter() {
 			@Override
 			public void keyReleased(KeyEvent e) {
 				if (e.getKeyCode() == KeyEvent.VK_ENTER) {
 					close();
 				}
-
 			}
-
 		});
 
 		frame.add(numPanel);
@@ -90,7 +75,8 @@ public class KnobValuePopup extends CloseablePopup {
 							knob.setValue(val);
 							knob.repaint();
 						} else {
-							if (knob.getMin() <= val && knob.getMax() >= val) {
+							if (VibeComposerGUI.allowValuesOutOfRange.isSelected() ||
+									(knob.getMin() <= val && val <= knob.getMax())) {
 								knob.setValue(val);
 							} else {
 								knob.setValue(OMNI.clamp(val, knob.getMin(), knob.getMax()));

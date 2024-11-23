@@ -1,9 +1,9 @@
 package org.vibehistorian.vibecomposer;
 
+import org.vibehistorian.vibecomposer.MidiUtils.ScaleMode;
+
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlType;
-
-import org.vibehistorian.vibecomposer.MidiUtils.ScaleMode;
 
 @XmlRootElement(name = "SectionConfig")
 @XmlType(propOrder = {})
@@ -49,7 +49,7 @@ public class SectionConfig implements Cloneable {
 			return (SectionConfig) super.clone();
 		} catch (CloneNotSupportedException e) {
 			// Auto-generated catch block
-			e.printStackTrace();
+			LG.e(e);
 		}
 		return null;
 	}

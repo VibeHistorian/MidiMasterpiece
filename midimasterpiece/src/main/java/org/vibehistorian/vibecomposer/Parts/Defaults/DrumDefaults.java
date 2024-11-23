@@ -1,16 +1,16 @@
 package org.vibehistorian.vibecomposer.Parts.Defaults;
 
+import org.vibehistorian.vibecomposer.Enums.RhythmPattern;
+import org.vibehistorian.vibecomposer.InstUtils;
+import org.vibehistorian.vibecomposer.MidiUtils;
+import org.vibehistorian.vibecomposer.Parts.DrumPart;
+
+import java.util.Random;
+
 import static org.vibehistorian.vibecomposer.Enums.RhythmPattern.ALT;
 import static org.vibehistorian.vibecomposer.Enums.RhythmPattern.ONEPER4;
 import static org.vibehistorian.vibecomposer.Enums.RhythmPattern.ONESIX;
 import static org.vibehistorian.vibecomposer.Enums.RhythmPattern.TRESILLO;
-
-import java.util.Random;
-
-import org.vibehistorian.vibecomposer.InstUtils;
-import org.vibehistorian.vibecomposer.MidiUtils;
-import org.vibehistorian.vibecomposer.Enums.RhythmPattern;
-import org.vibehistorian.vibecomposer.Parts.DrumPart;
 
 public class DrumDefaults {
 	/*public static final DrumPart kick = makeSimpleDrum(36, 8, 1);

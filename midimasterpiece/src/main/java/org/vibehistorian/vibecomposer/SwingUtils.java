@@ -1,32 +1,23 @@
 package org.vibehistorian.vibecomposer;
 
-import java.awt.Adjustable;
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Container;
-import java.awt.Font;
-import java.awt.Graphics;
-import java.awt.GridLayout;
-import java.awt.MouseInfo;
-import java.awt.Point;
-import java.awt.PointerInfo;
-import java.awt.event.*;
+import org.apache.commons.lang3.tuple.Pair;
+import org.vibehistorian.vibecomposer.Panels.InstPanel;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.awt.event.MouseWheelEvent;
+import java.awt.event.MouseWheelListener;
 import java.awt.font.FontRenderContext;
 import java.awt.geom.AffineTransform;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
-
-import javax.swing.JComponent;
-import javax.swing.JFrame;
-import javax.swing.JMenuItem;
-import javax.swing.JPopupMenu;
-import javax.swing.JScrollPane;
-import javax.swing.Timer;
-
-import org.apache.commons.lang3.tuple.Pair;
-import org.vibehistorian.vibecomposer.Panels.InstPanel;
 
 public class SwingUtils {
 
@@ -94,17 +85,17 @@ public class SwingUtils {
 		return textwidth;
 	}
 
-	public static void flashComponent(final JComponent field, Color flashColor,
-			final int timerDelay, int totalTime) {
+	public static void flashComponentCustom(final JComponent field, BiConsumer<JComponent, Boolean> customFlasher,
+									  final int timerDelay, int totalTime) {
 		final int totalCount = totalTime / timerDelay;
 		javax.swing.Timer timer = new javax.swing.Timer(timerDelay, new ActionListener() {
 			int count = 0;
 
 			public void actionPerformed(ActionEvent evt) {
 				if (count % 2 == 0) {
-					field.setBackground(flashColor);
+					customFlasher.accept(field, true);
 				} else {
-					field.setBackground(null);
+					customFlasher.accept(field, false);
 					if (count >= totalCount) {
 						((Timer) evt.getSource()).stop();
 					}
@@ -113,6 +104,13 @@ public class SwingUtils {
 			}
 		});
 		timer.start();
+	}
+
+	public static void flashComponent(final JComponent field, Color flashColor,
+			final int timerDelay, int totalTime) {
+		flashComponentCustom(field, (f, state) -> {
+			f.setBackground(state ? flashColor : null);
+		}, timerDelay, totalTime);
 	}
 
 	public static Pair<JPopupMenu, MouseListener> addPopupMenu(JComponent comp, BiConsumer<ActionEvent, String> actionOnSelect,
@@ -199,17 +197,15 @@ public class SwingUtils {
 	}
 
 	public static Point getMouseLocation() {
-		PointerInfo pi = MouseInfo.getPointerInfo();
-		Point mp = pi.getLocation();
 		//Point mousePointFixed = new Point(mp);
 		/*if (VibeComposerGUI.vibeComposerGUI.getLocation().x < 0) {
 			//mp.x *= -1;
 		}
 		LG.i("Mouse: " + mp.toString());*/
-		return mp;
+		return MouseInfo.getPointerInfo().getLocation();
 	}
 
-	public static void setFrameLocation(JFrame frame, Point loc) {
+	public static void setFrameLocation(JDialog frame, Point loc) {
 		loc.x = Math.max(VibeComposerGUI.vibeComposerGUI.getLocation().x + 50, loc.x);
 		loc.y = Math.max(VibeComposerGUI.vibeComposerGUI.getLocation().y + 50, loc.y);
 		if (loc.x < 0) {

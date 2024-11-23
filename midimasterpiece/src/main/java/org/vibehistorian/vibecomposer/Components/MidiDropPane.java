@@ -5,14 +5,17 @@ package org.vibehistorian.vibecomposer.Components;
  * Original author: MadProgrammer
  */
 
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.GridBagLayout;
-import java.awt.Point;
-import java.awt.Rectangle;
+import jm.music.data.Part;
+import jm.music.data.Phrase;
+import jm.music.data.Score;
+import jm.util.Read;
+import org.vibehistorian.vibecomposer.Helpers.PhraseNotes;
+import org.vibehistorian.vibecomposer.JMusicUtilsCustom;
+import org.vibehistorian.vibecomposer.LG;
+
+import javax.swing.*;
+import javax.swing.border.BevelBorder;
+import java.awt.*;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
 import java.awt.dnd.DnDConstants;
@@ -26,21 +29,6 @@ import java.io.File;
 import java.util.List;
 import java.util.TooManyListenersException;
 import java.util.function.Function;
-
-import javax.swing.BorderFactory;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.SwingUtilities;
-import javax.swing.border.BevelBorder;
-
-import org.vibehistorian.vibecomposer.JMusicUtilsCustom;
-import org.vibehistorian.vibecomposer.LG;
-import org.vibehistorian.vibecomposer.Helpers.PhraseNotes;
-
-import jm.music.data.Part;
-import jm.music.data.Phrase;
-import jm.music.data.Score;
-import jm.util.Read;
 
 public class MidiDropPane extends JPanel {
 
@@ -61,7 +49,7 @@ public class MidiDropPane extends JPanel {
 		/*try {
 			target = ImageIO.read(new File("target.png"));
 		} catch (IOException ex) {
-			ex.printStackTrace();
+			LG.e(ex);
 		}*/
 
 		setBorder(BorderFactory.createBevelBorder(BevelBorder.LOWERED));
@@ -107,7 +95,7 @@ public class MidiDropPane extends JPanel {
 		try {
 			getMyDropTarget().addDropTargetListener(getDropTargetHandler());
 		} catch (TooManyListenersException ex) {
-			ex.printStackTrace();
+			LG.e(ex);
 		}
 	}
 
@@ -138,7 +126,7 @@ public class MidiDropPane extends JPanel {
 			if (files == null || files.isEmpty()) {
 				message.setText("No file!");
 			} else {
-				File file = (File) files.get(0);
+				File file = files.get(0);
 				if (file.getName().endsWith("mid") || file.getName().endsWith("midi")) {
 					message.setText(file.getName());
 					Score scr = Read.midiOrJmWithNoMessaging(file);
@@ -225,7 +213,7 @@ public class MidiDropPane extends JPanel {
 					}
 
 				} catch (Exception ex) {
-					ex.printStackTrace();
+					LG.e(ex);
 				}
 			} else {
 				dtde.rejectDrop();

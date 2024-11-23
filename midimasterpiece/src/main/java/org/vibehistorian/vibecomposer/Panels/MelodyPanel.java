@@ -1,33 +1,40 @@
 package org.vibehistorian.vibecomposer.Panels;
 
-import java.awt.Color;
-import java.awt.Insets;
-import java.awt.event.ActionListener;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-
-import javax.swing.JCheckBox;
-import javax.swing.JLabel;
-
 import org.apache.commons.lang3.StringUtils;
+import org.vibehistorian.vibecomposer.Components.BigPickerOpener;
+import org.vibehistorian.vibecomposer.Components.CustomCheckBox;
+import org.vibehistorian.vibecomposer.Components.RandomIntegerListButton;
+import org.vibehistorian.vibecomposer.Components.ScrollComboBox;
+import org.vibehistorian.vibecomposer.Helpers.PhraseNotes;
 import org.vibehistorian.vibecomposer.InstUtils.POOL;
+import org.vibehistorian.vibecomposer.LG;
 import org.vibehistorian.vibecomposer.MelodyUtils;
 import org.vibehistorian.vibecomposer.MidiGenerator;
 import org.vibehistorian.vibecomposer.MidiGeneratorUtils;
 import org.vibehistorian.vibecomposer.MidiUtils;
 import org.vibehistorian.vibecomposer.OMNI;
-import org.vibehistorian.vibecomposer.VibeComposerGUI;
-import org.vibehistorian.vibecomposer.Components.CustomCheckBox;
-import org.vibehistorian.vibecomposer.Components.RandomIntegerListButton;
-import org.vibehistorian.vibecomposer.Components.ScrollComboBox;
 import org.vibehistorian.vibecomposer.Panels.SoloMuter.State;
 import org.vibehistorian.vibecomposer.Parts.InstPart;
 import org.vibehistorian.vibecomposer.Parts.MelodyPart;
+import org.vibehistorian.vibecomposer.Popups.CustomDurationsEditPopup;
+import org.vibehistorian.vibecomposer.VibeComposerGUI;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class MelodyPanel extends InstPanel {
 
 	private static final long serialVersionUID = -7861296600641561431L;
+
+	public static final int CUSTOM_DURATIONS_LIMIT = 10;
 
 	private JCheckBox fillPauses = new CustomCheckBox("<html>Fill<br>Pauses</html>", false);
 	private RandomIntegerListButton noteTargets = new RandomIntegerListButton("0,2,2,4", this);
@@ -39,14 +46,17 @@ public class MelodyPanel extends InstPanel {
 	private KnobPanel doubledRhythmChance = new KnobPanel("Doubled<br>Rhythm%", 0);
 	private KnobPanel splitChance = new KnobPanel("Split<br>Long%", 0);
 	private KnobPanel noteExceptionChance = new KnobPanel("Note<br> Exc.%", 25);
-	private KnobPanel speed = new KnobPanel("Speed", 50);
+	private KnobPanel speed = new KnobPanel("Speed", 50, -100, 100);
 	private KnobPanel leadChordsChance = new KnobPanel("Lead To<br>Chords%", 25);
 	private KnobPanel startNoteChance = new KnobPanel("Start%", 80);
 	private JCheckBox patternFlexible = new CustomCheckBox("Flex", true);
 
+	private PhraseNotes customDurationValues = new PhraseNotes();
+	private List<Integer> customDurationChances = new ArrayList<>(IntStream.iterate(50, e -> e).limit(CUSTOM_DURATIONS_LIMIT).boxed().collect(Collectors.toList()));
+
 	public void initComponents(ActionListener l) {
 
-		ScrollComboBox.addAll(new Integer[] { 1, 2, 3, 4, 5, 6, 7, 8, 11, 12, 13, 14, 15 },
+		ScrollComboBox.addAll(new Integer[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15 },
 				midiChannel);
 		midiChannel.setVal(1);
 		instPool = POOL.MELODY;
@@ -60,10 +70,22 @@ public class MelodyPanel extends InstPanel {
 		this.add(panSlider);
 		/*this.add(new JLabel("#"));
 		this.add(panelOrder);*/
-		this.add(new JLabel("#"));
+		//this.add(new JLabel("#"));
 		this.add(panelOrder);
 		addDefaultInstrumentControls();
 		addDefaultPanelButtons();
+
+		BigPickerOpener bpo = new BigPickerOpener();
+		bpo.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mousePressed(MouseEvent evt) {
+				LG.i(customDurationValues);
+				new CustomDurationsEditPopup(customDurationValues, customDurationChances, MelodyPanel.this);
+			}
+		});
+		speed.getKnobLockPane().add(bpo);
+		bpo.setBounds(0, 0, 8, 8);
+		speed.getKnobLockPane().setComponentZOrder(bpo, Integer.valueOf(0));
 
 		transpose.getKnob().setTickSpacing(10);
 		Integer[] allowedMelodyTransposes = new Integer[] { 0, 4, 5, 7 };
@@ -94,10 +116,10 @@ public class MelodyPanel extends InstPanel {
 			return StringUtils.join(noteTargets.getRandGenerator().apply(new Object()), ",");
 		});
 		noteTargets.setRandGenerator(e -> {
-			return MidiGeneratorUtils.generateOffsets(MidiGenerator.chordInts,
+			return MidiGeneratorUtils.generateNoteTargetOffsets(MidiGenerator.chordInts,
 					(e instanceof Integer) ? (Integer) e : new Random().nextInt(),
 					VibeComposerGUI.melodyBlockTargetMode.getSelectedIndex(),
-					VibeComposerGUI.melodyTargetNoteVariation.getInt(), null);
+					VibeComposerGUI.melodyTargetNoteVariation.getInt(), null, VibeComposerGUI.noteTargetDirectionChoice.getSelectedItem());
 		});
 		noteTargets.setHighlighterGenerator(e -> {
 			if (MidiGenerator.chordInts.isEmpty()) {
@@ -121,14 +143,10 @@ public class MelodyPanel extends InstPanel {
 		this.add(new JLabel("Pattern"));
 		patternStructure.setMargin(new Insets(0, 0, 0, 0));
 		this.add(patternStructure);
-		patternStructure.setTextGenerator(e -> {
-			return StringUtils.join(MelodyUtils.getRandomMelodyPattern(getAlternatingRhythmChance(),
-					new Random().nextInt()), ",");
-		});
-		patternStructure.setRandGenerator(e -> {
-			return MelodyUtils.getRandomMelodyPattern(getAlternatingRhythmChance(),
-					new Random().nextInt());
-		});
+		patternStructure.setTextGenerator(e -> StringUtils.join(MelodyUtils.getRandomMelodyPattern(getAlternatingRhythmChance(),
+                new Random().nextInt()), ","));
+		patternStructure.setRandGenerator(e -> MelodyUtils.getRandomMelodyPattern(getAlternatingRhythmChance(),
+                new Random().nextInt()));
 		this.add(patternFlexible);
 
 		this.add(blockJump);
@@ -160,8 +178,6 @@ public class MelodyPanel extends InstPanel {
 
 		this.add(new JLabel("Midi ch."));
 		this.add(midiChannel);
-		setPanelOrder(1);
-
 	}
 
 	@Override
@@ -196,7 +212,6 @@ public class MelodyPanel extends InstPanel {
 	public MelodyPart toMelodyPart(int lastRandomSeed) {
 		MelodyPart part = new MelodyPart();
 		part.setFromPanel(this, lastRandomSeed);
-		part.setOrder(getPanelOrder());
 
 		part.setFillPauses(getFillPauses());
 		part.setChordNoteChoices(getChordNoteChoices());
@@ -213,13 +228,15 @@ public class MelodyPanel extends InstPanel {
 		part.setSplitChance(getSplitChance());
 		part.setPatternFlexible(getPatternFlexible());
 
+		part.setCustomDurationNotes(getCustomDurationNotes());
+		part.setCustomDurationChances(getCustomDurationChances());
+
 		return part;
 	}
 
 	public void setFromInstPart(InstPart p) {
 		MelodyPart part = (MelodyPart) p;
 		setDefaultsFromInstPart(part);
-		setPanelOrder(part.getOrder());
 
 		setFillPauses(part.isFillPauses());
 		setChordNoteChoices(part.getChordNoteChoices());
@@ -235,6 +252,9 @@ public class MelodyPanel extends InstPanel {
 		setSpeed(part.getSpeed());
 		setSplitChance(part.getSplitChance());
 		setPatternFlexible(part.isPatternFlexible());
+
+		setCustomDurationNotes(part.getCustomDurationNotes());
+		setCustomDurationChances(part.getCustomDurationChances());
 	}
 
 	@Override
@@ -267,6 +287,9 @@ public class MelodyPanel extends InstPanel {
 	}
 
 	public void overridePatterns(MelodyPanel mp1) {
+		if (getLockInst() == true) {
+			return;
+		}
 		noteTargets.setValue(mp1.noteTargets.getValue());
 		patternStructure.setValue(mp1.patternStructure.getValue());
 		maxBlockChange.setInt(mp1.maxBlockChange.getInt());
@@ -386,6 +409,22 @@ public class MelodyPanel extends InstPanel {
 
 	public void setPatternFlexible(boolean val) {
 		this.patternFlexible.setSelected(val);
+	}
+
+	public PhraseNotes getCustomDurationNotes() {
+		return PhraseNotes.fromPN(customDurationValues);
+	}
+
+	private void setCustomDurationNotes(PhraseNotes customDurationNotes) {
+		this.customDurationValues = PhraseNotes.fromPN(customDurationNotes);
+	}
+
+	public List<Integer> getCustomDurationChances() {
+		return customDurationChances;
+	}
+
+	public void setCustomDurationChances(List<Integer> customDurationChances) {
+		this.customDurationChances = customDurationChances;
 	}
 }
 

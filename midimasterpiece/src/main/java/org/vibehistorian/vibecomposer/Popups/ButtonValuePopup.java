@@ -1,14 +1,14 @@
 package org.vibehistorian.vibecomposer.Popups;
 
+import org.vibehistorian.vibecomposer.Components.RandomValueButton;
+import org.vibehistorian.vibecomposer.LG;
+import org.vibehistorian.vibecomposer.Panels.NumPanel;
+
+import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.util.Random;
-
-import org.vibehistorian.vibecomposer.LG;
-import org.vibehistorian.vibecomposer.Components.RandomValueButton;
-import org.vibehistorian.vibecomposer.Panels.NumPanel;
 
 public class ButtonValuePopup extends CloseablePopup {
 	private RandomValueButton butt = null;
@@ -24,28 +24,13 @@ public class ButtonValuePopup extends CloseablePopup {
 
 		numPanel = new NumPanel("Button", butt.getValue(), Integer.MIN_VALUE, Integer.MAX_VALUE);
 		numPanel.getValueRect().setVisible(false);
-		numPanel.getTextfield().addKeyListener(new KeyListener() {
-
-			@Override
-			public void keyTyped(KeyEvent e) {
-
-
-			}
-
-			@Override
-			public void keyPressed(KeyEvent e) {
-				// Auto-generated method stub
-
-			}
-
+		numPanel.getTextfield().addKeyListener(new KeyAdapter() {
 			@Override
 			public void keyReleased(KeyEvent e) {
 				if (e.getKeyCode() == KeyEvent.VK_ENTER) {
 					close();
 				}
-
 			}
-
 		});
 
 		frame.add(numPanel);

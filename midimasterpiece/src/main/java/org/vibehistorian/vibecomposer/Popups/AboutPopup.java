@@ -1,14 +1,9 @@
 package org.vibehistorian.vibecomposer.Popups;
 
-import java.awt.Color;
-import java.awt.Font;
-import java.awt.Point;
-
-import javax.swing.JFrame;
-import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
-
 import org.vibehistorian.vibecomposer.LG;
+
+import javax.swing.*;
+import java.awt.*;
 
 public class AboutPopup extends CloseablePopup {
 	JTextArea textArea;

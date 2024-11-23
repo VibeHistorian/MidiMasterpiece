@@ -1,16 +1,11 @@
 package org.vibehistorian.vibecomposer.Components;
 
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-
-import javax.swing.JComponent;
-
 import org.vibehistorian.vibecomposer.MidiGenerator;
 import org.vibehistorian.vibecomposer.Section;
 import org.vibehistorian.vibecomposer.VibeComposerGUI;
+
+import javax.swing.*;
+import java.awt.*;
 
 /*
 
@@ -99,7 +94,8 @@ public class ShowRulerBig extends JComponent {
 		double maxX = (ShowPanelBig.maxEndTime) * beatWidth;
 
 		double highlightX = (VibeComposerGUI.slider != null
-				&& VibeComposerGUI.sliderMeasureStartTimes != null)
+				&& VibeComposerGUI.sliderMeasureStartTimes != null
+				&& !VibeComposerGUI.sliderMeasureStartTimes.isEmpty())
 						? (maxX * VibeComposerGUI.slider.getUpperValue())
 								/ (double) ((VibeComposerGUI.sliderExtended > 0
 										? VibeComposerGUI.sliderExtended
@@ -143,7 +139,7 @@ public class ShowRulerBig extends JComponent {
 		}
 
 		g.setColor(Color.green);
-		g.drawLine((int) highlightX, ShowRulerBig.maxHeight / 2, (int) highlightX, 0);
+		g.fillRect((int) highlightX, ShowRulerBig.maxHeight / 2, 3, ShowRulerBig.maxHeight / 2);
 		//g.dispose();
 	}
 

@@ -1,21 +1,18 @@
 package org.vibehistorian.vibecomposer.Panels;
 
-import java.awt.Dimension;
-import java.awt.Insets;
-import java.awt.event.ActionListener;
-import java.awt.event.ItemEvent;
-import java.awt.event.ItemListener;
-
-import javax.swing.JButton;
-import javax.swing.JLabel;
-
-import org.vibehistorian.vibecomposer.InstUtils;
-import org.vibehistorian.vibecomposer.VibeComposerGUI;
 import org.vibehistorian.vibecomposer.Components.ScrollComboBox;
 import org.vibehistorian.vibecomposer.Enums.PatternJoinMode;
 import org.vibehistorian.vibecomposer.Enums.StrumType;
+import org.vibehistorian.vibecomposer.InstUtils;
 import org.vibehistorian.vibecomposer.Parts.ChordPart;
 import org.vibehistorian.vibecomposer.Parts.InstPart;
+import org.vibehistorian.vibecomposer.VibeComposerGUI;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 
 public class ChordPanel extends InstPanel {
 
@@ -49,7 +46,7 @@ public class ChordPanel extends InstPanel {
 		volSlider.setDefaultValue(40);
 		this.add(volSlider);
 		this.add(panSlider);
-		this.add(new JLabel("#"));
+		//this.add(new JLabel("#"));
 		this.add(panelOrder);
 		addDefaultInstrumentControls();
 		this.add(instPoolPicker);
@@ -74,6 +71,11 @@ public class ChordPanel extends InstPanel {
 		this.add(pauseChance);
 
 		this.add(patternJoinMode);
+
+		stretchPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 0, 0));
+		stretchPanel.setMaximumSize(new Dimension(3000, 50));
+		stretchPanel.add(stretchEnabled);
+		stretchPanel.add(chordNotesStretch);
 		this.add(stretchPanel);
 
 		this.add(strum);
@@ -179,7 +181,6 @@ public class ChordPanel extends InstPanel {
 
 		part.setInstPool(getInstPool());
 		part.setStrumType(getStrumType());
-		part.setOrder(getPanelOrder());
 		return part;
 	}
 
@@ -195,8 +196,6 @@ public class ChordPanel extends InstPanel {
 		setStrumPauseChance(part.getStrumPauseChance());
 		setPatternJoinMode(part.getPatternJoinMode());
 		setStrumType(part.getStrumType());
-
-		setPanelOrder(part.getOrder());
 
 	}
 

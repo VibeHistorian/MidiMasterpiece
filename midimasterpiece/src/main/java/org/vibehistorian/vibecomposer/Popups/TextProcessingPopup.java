@@ -1,12 +1,11 @@
 package org.vibehistorian.vibecomposer.Popups;
 
+import javax.swing.*;
+import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.util.function.Consumer;
-
-import javax.swing.JTextField;
 
 public class TextProcessingPopup extends CloseablePopup {
 	private Consumer<String> callback = null;
@@ -16,28 +15,13 @@ public class TextProcessingPopup extends CloseablePopup {
 		super(title, 0);
 		this.callback = callback;
 
-		textField.addKeyListener(new KeyListener() {
-
-			@Override
-			public void keyTyped(KeyEvent e) {
-
-
-			}
-
-			@Override
-			public void keyPressed(KeyEvent e) {
-				// Auto-generated method stub
-
-			}
-
+		textField.addKeyListener(new KeyAdapter() {
 			@Override
 			public void keyReleased(KeyEvent e) {
 				if (e.getKeyCode() == KeyEvent.VK_ENTER) {
 					close();
 				}
-
 			}
-
 		});
 
 		frame.add(textField);

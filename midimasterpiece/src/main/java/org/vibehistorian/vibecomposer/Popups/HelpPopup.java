@@ -1,20 +1,13 @@
 package org.vibehistorian.vibecomposer.Popups;
 
-import java.awt.Desktop;
+import org.vibehistorian.vibecomposer.LG;
+
+import java.awt.*;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 
-import javax.swing.JFrame;
-import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
-
-import org.vibehistorian.vibecomposer.LG;
-
 public class HelpPopup {
-	final JFrame frame = new JFrame();
-	JTextArea textArea;
-	JScrollPane scroll;
 
 	public HelpPopup() {
 		/*textArea = new JTextArea(24, 80);
@@ -34,13 +27,9 @@ public class HelpPopup {
 					"https://github.com/VibeHistorian/VibeComposer/blob/development_master/midimasterpiece/VibeComposer_UserManual.pdf"));
 		} catch (IOException | URISyntaxException e) {
 			// Auto-generated catch block
-			e.printStackTrace();
+			LG.e("Error opening GitHub link!", e);
 		}
 
 		LG.d("Opened Help page!");
-	}
-
-	public JFrame getFrame() {
-		return frame;
 	}
 }

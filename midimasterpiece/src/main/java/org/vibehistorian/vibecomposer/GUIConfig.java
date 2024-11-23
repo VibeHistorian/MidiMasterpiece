@@ -19,21 +19,12 @@ see <https://www.gnu.org/licenses/>.
 
 package org.vibehistorian.vibecomposer;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlRootElement;
-import javax.xml.bind.annotation.XmlTransient;
-import javax.xml.bind.annotation.XmlType;
-
 import org.apache.commons.lang3.StringUtils;
-import org.vibehistorian.vibecomposer.MidiUtils.ScaleMode;
 import org.vibehistorian.vibecomposer.Enums.KeyChangeType;
 import org.vibehistorian.vibecomposer.Helpers.PatternMap;
 import org.vibehistorian.vibecomposer.Helpers.PhraseNotes;
 import org.vibehistorian.vibecomposer.Helpers.UsedPattern;
+import org.vibehistorian.vibecomposer.MidiUtils.ScaleMode;
 import org.vibehistorian.vibecomposer.Panels.ArpGenSettings;
 import org.vibehistorian.vibecomposer.Panels.ChordGenSettings;
 import org.vibehistorian.vibecomposer.Panels.DrumGenSettings;
@@ -43,6 +34,14 @@ import org.vibehistorian.vibecomposer.Parts.ChordPart;
 import org.vibehistorian.vibecomposer.Parts.DrumPart;
 import org.vibehistorian.vibecomposer.Parts.InstPart;
 import org.vibehistorian.vibecomposer.Parts.MelodyPart;
+
+import javax.xml.bind.annotation.XmlAttribute;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlTransient;
+import javax.xml.bind.annotation.XmlType;
+import java.util.ArrayList;
+import java.util.List;
 
 @XmlRootElement(name = "GUIConfig")
 @XmlType(propOrder = {})
@@ -81,6 +80,8 @@ public class GUIConfig {
 	private Integer globalSwingOverride = null;
 	private boolean customMidiForceScale = false;
 	private boolean transposedNotesForceScale = false;
+	private int humanizeDrums = 20;
+	private int humanizeNotes = 150;
 
 
 	// melody gen
@@ -100,20 +101,27 @@ public class GUIConfig {
 	private int melodyMaxDirChanges = 2;
 	private int melodyTargetNoteVariation = 4;
 
+	private boolean melody1ForcePatterns = false;
 	private boolean melodyArpySurprises = false;
 	private boolean melodySingleNoteExceptions = false;
 	private boolean melodyFillPausesPerChord = false;
 	private int melodyNewBlocksChance = 0;
 	private boolean melodyLegacyMode = false;
+	private List<Integer> melodyBlockChoicePreference = new ArrayList<>();
+	private List<Integer> melodyBlockTypePreference = new ArrayList<>();
 
 	private boolean melodyAvoidChordJumps = false;
 	private boolean melodyUseDirectionsFromProgression = true;
 	private boolean melodyPatternFlip = false;
+	private MelodyUtils.NoteTargetDirection noteTargetDirectionChoice = MelodyUtils.NoteTargetDirection.ANY;
 	private int melodyBlockTargetMode = 2;
 	private int melodyPatternEffect = 2;
 	private int melodyRhythmAccents = 0;
 	private int melodyRhythmAccentsMode = 0;
 	private boolean melodyRhythmAccentsPocket = false;
+	private boolean melodyUseCustomDurations = false;
+	private boolean melodyCustomDurationsRandomWeighting = false;
+	private boolean melodyCustomDurationsStrictMode = true;
 
 	// chord gen
 	private int chordSlashChance = 0;
@@ -937,4 +945,76 @@ public class GUIConfig {
     public void setVersion(String version) {
         this.version = version;
     }
+
+	public int getHumanizeDrums() {
+		return humanizeDrums;
+	}
+
+	public void setHumanizeDrums(int humanizeDrums) {
+		this.humanizeDrums = humanizeDrums;
+	}
+
+	public int getHumanizeNotes() {
+		return humanizeNotes;
+	}
+
+	public void setHumanizeNotes(int humanizeNotes) {
+		this.humanizeNotes = humanizeNotes;
+	}
+
+	public List<Integer> getMelodyBlockChoicePreference() {
+		return melodyBlockChoicePreference;
+	}
+
+	public void setMelodyBlockChoicePreference(List<Integer> melodyBlockChoicePreference) {
+		this.melodyBlockChoicePreference = melodyBlockChoicePreference;
+	}
+
+	public boolean isMelody1ForcePatterns() {
+		return melody1ForcePatterns;
+	}
+
+	public void setMelody1ForcePatterns(boolean melody1ForcePatterns) {
+		this.melody1ForcePatterns = melody1ForcePatterns;
+	}
+
+	public List<Integer> getMelodyBlockTypePreference() {
+		return melodyBlockTypePreference;
+	}
+
+	public void setMelodyBlockTypePreference(List<Integer> melodyBlockTypePreference) {
+		this.melodyBlockTypePreference = melodyBlockTypePreference;
+	}
+
+	public MelodyUtils.NoteTargetDirection getNoteTargetDirectionChoice() {
+		return noteTargetDirectionChoice;
+	}
+
+	public void setNoteTargetDirectionChoice(MelodyUtils.NoteTargetDirection noteTargetDirectionChoice) {
+		this.noteTargetDirectionChoice = noteTargetDirectionChoice;
+	}
+
+	public boolean isMelodyUseCustomDurations() {
+		return melodyUseCustomDurations;
+	}
+
+	public void setMelodyUseCustomDurations(boolean melodyUseCustomDurations) {
+		this.melodyUseCustomDurations = melodyUseCustomDurations;
+	}
+
+	public boolean isMelodyCustomDurationsRandomWeighting() {
+		return melodyCustomDurationsRandomWeighting;
+	}
+
+	public void setMelodyCustomDurationsRandomWeighting(boolean melodyCustomDurationsRandomWeighting) {
+		this.melodyCustomDurationsRandomWeighting = melodyCustomDurationsRandomWeighting;
+	}
+
+	public boolean isMelodyCustomDurationsStrictMode() {
+		return melodyCustomDurationsStrictMode;
+	}
+
+	public void setMelodyCustomDurationsStrictMode(boolean melodyCustomDurationsStrictMode) {
+		this.melodyCustomDurationsStrictMode = melodyCustomDurationsStrictMode;
+	}
 }

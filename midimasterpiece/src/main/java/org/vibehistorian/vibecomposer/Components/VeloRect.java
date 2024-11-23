@@ -1,25 +1,17 @@
 package org.vibehistorian.vibecomposer.Components;
 
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.Insets;
-import java.awt.MouseInfo;
-import java.awt.Point;
+import org.vibehistorian.vibecomposer.Helpers.CheckBoxIcon;
+import org.vibehistorian.vibecomposer.OMNI;
+import org.vibehistorian.vibecomposer.Panels.VisualPatternPanel;
+import org.vibehistorian.vibecomposer.SwingUtils;
+import org.vibehistorian.vibecomposer.VibeComposerGUI;
+
+import javax.swing.*;
+import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionListener;
-import java.awt.event.MouseWheelEvent;
-import java.awt.event.MouseWheelListener;
-
-import javax.swing.JComponent;
-import javax.swing.SwingUtilities;
-
-import org.vibehistorian.vibecomposer.OMNI;
-import org.vibehistorian.vibecomposer.VibeComposerGUI;
-import org.vibehistorian.vibecomposer.Helpers.CheckBoxIcon;
-import org.vibehistorian.vibecomposer.Panels.VisualPatternPanel;
+import java.util.function.Consumer;
 
 public class VeloRect extends JComponent {
 
@@ -42,6 +34,16 @@ public class VeloRect extends JComponent {
 	public static Color highlightColorLight = OMNI.alphen(new Color(255, 100, 100), 200);
 	private VisualPatternPanel visualParent = null;
 	private int visualParentOrderIndex = -1;
+
+	public Consumer<Integer> updatedValueListener;
+
+	public static VeloRect percent(int currentVal) {
+		return new VeloRect(0, 100, currentVal);
+	}
+
+	public static VeloRect midi(int currentVal) {
+		return new VeloRect(0, 127, currentVal);
+	}
 
 	public VeloRect(int minimum, int maximum, int currentVal) {
 		super();
@@ -94,15 +96,11 @@ public class VeloRect extends JComponent {
 
 		});
 
-		addMouseWheelListener(new MouseWheelListener() {
-
-			@Override
-			public void mouseWheelMoved(MouseWheelEvent e) {
-				int scrollAmount = Math.max(1, (max - min) / 20);
-				setValue(OMNI.clamp(val - e.getWheelRotation() * scrollAmount, min, max));
-				repaint();
-			}
-		});
+		addMouseWheelListener(e -> {
+            int scrollAmount = Math.max(1, (max - min) / 20);
+            setValue(OMNI.clamp(val - e.getWheelRotation() * scrollAmount, min, max));
+            repaint();
+        });
 		setOpaque(true);
 		updateSizes(defaultSize);
 	}
@@ -111,7 +109,7 @@ public class VeloRect extends JComponent {
 		if (!isEnabled()) {
 			return;
 		}
-		Point xy = new Point(MouseInfo.getPointerInfo().getLocation());
+		Point xy = new Point(SwingUtils.getMouseLocation());
 		SwingUtilities.convertPointFromScreen(xy, VeloRect.this);
 		int newVal = max - (max * xy.y / getHeight());
 		if (fine) {
@@ -146,6 +144,9 @@ public class VeloRect extends JComponent {
 		this.val = value;
 		if (visualParent != null) {
 			visualParent.getTrueVelocities().set(visualParentOrderIndex, value);
+		}
+		if (updatedValueListener != null) {
+			updatedValueListener.accept(val);
 		}
 	}
 

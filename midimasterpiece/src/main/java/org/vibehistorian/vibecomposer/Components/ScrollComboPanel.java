@@ -1,8 +1,13 @@
 package org.vibehistorian.vibecomposer.Components;
 
-import java.awt.Component;
-import java.awt.Container;
-import java.awt.Dimension;
+import org.vibehistorian.vibecomposer.Helpers.BoundsPopupMenuListener;
+import org.vibehistorian.vibecomposer.Panels.InstPanel;
+import org.vibehistorian.vibecomposer.Panels.TransparentablePanel;
+import org.vibehistorian.vibecomposer.SwingUtils;
+import org.vibehistorian.vibecomposer.VibeComposerGUI;
+
+import javax.swing.*;
+import java.awt.*;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
@@ -16,19 +21,6 @@ import java.util.Random;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
-import javax.swing.BoxLayout;
-import javax.swing.ComboBoxEditor;
-import javax.swing.JButton;
-import javax.swing.JLayeredPane;
-import javax.swing.SwingUtilities;
-
-import org.vibehistorian.vibecomposer.SwingUtils;
-import org.vibehistorian.vibecomposer.UndoManager;
-import org.vibehistorian.vibecomposer.VibeComposerGUI;
-import org.vibehistorian.vibecomposer.Helpers.BoundsPopupMenuListener;
-import org.vibehistorian.vibecomposer.Panels.InstPanel;
-import org.vibehistorian.vibecomposer.Panels.TransparentablePanel;
 
 public class ScrollComboPanel<T> extends TransparentablePanel implements GloballyLockable {
 
@@ -246,7 +238,7 @@ public class ScrollComboPanel<T> extends TransparentablePanel implements Globall
 		}
 
 		if (interacting) {
-			UndoManager.saveToHistory(this);
+			VibeComposerGUI.actionUndoManager.saveToHistory(this);
 		}
 
 		if (isEnabled() && isDifferent) {

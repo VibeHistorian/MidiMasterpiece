@@ -1,27 +1,23 @@
 package org.vibehistorian.vibecomposer.Panels;
 
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Insets;
-import java.awt.event.ActionListener;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
-
-import javax.swing.JButton;
-import javax.swing.JLabel;
-
 import org.apache.commons.lang3.StringUtils;
-import org.vibehistorian.vibecomposer.MelodyUtils;
-import org.vibehistorian.vibecomposer.OMNI;
 import org.vibehistorian.vibecomposer.Components.ArpPickerMini;
 import org.vibehistorian.vibecomposer.Components.CheckButton;
 import org.vibehistorian.vibecomposer.Components.RandomIntegerListButton;
 import org.vibehistorian.vibecomposer.Components.ScrollComboBox;
 import org.vibehistorian.vibecomposer.Enums.ArpPattern;
+import org.vibehistorian.vibecomposer.MelodyUtils;
+import org.vibehistorian.vibecomposer.OMNI;
 import org.vibehistorian.vibecomposer.Parts.ArpPart;
 import org.vibehistorian.vibecomposer.Parts.InstPart;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Random;
 
 public class ArpPanel extends InstPanel {
 	/**
@@ -45,7 +41,7 @@ public class ArpPanel extends InstPanel {
 		volSlider.setDefaultValue(50);
 		this.add(volSlider);
 		this.add(panSlider);
-		this.add(new JLabel("#"));
+		//this.add(new JLabel("#"));
 		this.add(panelOrder);
 		addDefaultInstrumentControls();
 		addDefaultPanelButtons();
@@ -88,6 +84,11 @@ public class ArpPanel extends InstPanel {
 		this.add(arpContourChordMode);
 		this.add(arpPatternRotate);
 
+
+		stretchPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 0, 0));
+		stretchPanel.setMaximumSize(new Dimension(3000, 50));
+		stretchPanel.add(stretchEnabled);
+		stretchPanel.add(chordNotesStretch);
 		this.add(stretchPanel);
 		this.add(noteLengthMultiplier);
 
@@ -136,9 +137,8 @@ public class ArpPanel extends InstPanel {
 
 	public ArpPart toArpPart(int lastRandomSeed) {
 		ArpPart part = new ArpPart();
-		part.setArpPattern(getArpPattern());
 		part.setFromPanel(this, lastRandomSeed);
-		part.setOrder(getPanelOrder());
+		part.setArpPattern(getArpPattern());
 		part.setArpPatternRotate(getArpPatternRotate());
 		part.setArpPatternCustom(
 				arpPattern.getVal() == ArpPattern.CUSTOM ? arpPattern.getCustomValues() : null);
@@ -151,7 +151,6 @@ public class ArpPanel extends InstPanel {
 		ArpPart part = (ArpPart) p;
 		setArpPattern(part.getArpPattern());
 		setDefaultsFromInstPart(part);
-		setPanelOrder(part.getOrder());
 		setArpPatternRotate(part.getArpPatternRotate());
 		if (part.getArpPattern() == ArpPattern.CUSTOM) {
 			arpPattern.setCustomValues(part.getArpPatternCustom());

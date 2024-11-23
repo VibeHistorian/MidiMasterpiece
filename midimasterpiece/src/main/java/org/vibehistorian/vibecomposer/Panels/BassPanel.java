@@ -1,20 +1,16 @@
 package org.vibehistorian.vibecomposer.Panels;
 
-import java.awt.Dimension;
-import java.awt.Insets;
-import java.awt.event.ActionListener;
-
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JLabel;
-
-import org.vibehistorian.vibecomposer.InstUtils;
 import org.vibehistorian.vibecomposer.Components.CustomCheckBox;
 import org.vibehistorian.vibecomposer.Components.ScrollComboBox;
 import org.vibehistorian.vibecomposer.Enums.PatternJoinMode;
 import org.vibehistorian.vibecomposer.Enums.RhythmPattern;
+import org.vibehistorian.vibecomposer.InstUtils;
 import org.vibehistorian.vibecomposer.Parts.BassPart;
 import org.vibehistorian.vibecomposer.Parts.InstPart;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionListener;
 
 public class BassPanel extends InstPanel {
 
@@ -41,7 +37,7 @@ public class BassPanel extends InstPanel {
 		volSlider.setDefaultValue(50);
 		this.add(volSlider);
 		this.add(panSlider);
-		this.add(new JLabel("#"));
+		//this.add(new JLabel("#"));
 		this.add(panelOrder);
 		addDefaultInstrumentControls();
 
@@ -83,7 +79,6 @@ public class BassPanel extends InstPanel {
 		this.add(patternSeed);
 
 		this.add(new JLabel("Midi ch.: 9"));
-		setPanelOrder(1);
 		comboPanel.reapplyHits();
 		initDefaultsPost();
 	}
@@ -100,7 +95,6 @@ public class BassPanel extends InstPanel {
 	public BassPart toBassPart(int lastRandomSeed) {
 		BassPart part = new BassPart();
 		part.setFromPanel(this, lastRandomSeed);
-		part.setOrder(getPanelOrder());
 		part.setUseRhythm(getUseRhythm());
 		part.setAlternatingRhythm(getAlternatingRhythm());
 		part.setDoubleOct(getDoubleOct());
@@ -113,7 +107,6 @@ public class BassPanel extends InstPanel {
 	public void setFromInstPart(InstPart p) {
 		BassPart part = (BassPart) p;
 		setDefaultsFromInstPart(part);
-		setPanelOrder(part.getOrder());
 		setUseRhythm(part.isUseRhythm());
 		setAlternatingRhythm(part.isAlternatingRhythm());
 		setDoubleOct(part.isDoubleOct());

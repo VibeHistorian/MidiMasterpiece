@@ -1,10 +1,12 @@
 package org.vibehistorian.vibecomposer.Helpers;
 
+import jm.constants.Pitches;
+import jm.music.data.Note;
+import org.vibehistorian.vibecomposer.LG;
+
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlTransient;
 import javax.xml.bind.annotation.XmlType;
-
-import jm.music.data.Note;
 
 @XmlRootElement(name = "PhraseNote")
 @XmlType(propOrder = {})
@@ -51,12 +53,20 @@ public class PhraseNote implements Cloneable {
 		return n;
 	}
 
+	@Override
+	public String toString() {
+		return "PN{" +
+				 + pitch +
+				", " + startTime +
+				'}';
+	}
+
 	public int getPitch() {
 		return pitch;
 	}
 
 	public void setPitch(int pitch) {
-		this.pitch = pitch >= 0 ? pitch : Note.REST;
+		this.pitch = pitch >= 0 ? pitch : Pitches.REST;
 	}
 
 	public int getDynamic() {
@@ -109,6 +119,16 @@ public class PhraseNote implements Cloneable {
 		this.startTime = startTime;
 	}
 
+	@XmlTransient
+	public double getEndTime() {
+		return startTime + duration;
+	}
+
+	@XmlTransient
+	public double getEndRv() {
+		return absoluteStartTime + rv;
+	}
+
 	public double getStart(boolean offsetted) {
 		return offsetted ? startTime : absoluteStartTime;
 	}
@@ -118,7 +138,7 @@ public class PhraseNote implements Cloneable {
 		try {
 			return (PhraseNote) super.clone();
 		} catch (CloneNotSupportedException e) {
-			e.printStackTrace();
+			LG.e(e);
 		}
 		return null;
 	}

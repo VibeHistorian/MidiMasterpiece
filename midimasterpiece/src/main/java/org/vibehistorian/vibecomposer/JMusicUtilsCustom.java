@@ -1,23 +1,7 @@
 package org.vibehistorian.vibecomposer;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Enumeration;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Random;
-import java.util.Vector;
-
-import org.apache.commons.lang3.tuple.Pair;
-import org.vibehistorian.vibecomposer.MidiGenerator.Durations;
-import org.vibehistorian.vibecomposer.Helpers.PartExt;
-import org.vibehistorian.vibecomposer.Helpers.PhraseExt;
-
 import jm.JMC;
+import jm.constants.Pitches;
 import jm.midi.SMF;
 import jm.midi.Track;
 import jm.midi.event.CChange;
@@ -33,11 +17,54 @@ import jm.music.data.Part;
 import jm.music.data.Phrase;
 import jm.music.data.Score;
 import jm.music.tools.Mod;
+import org.apache.commons.lang3.tuple.Pair;
+import org.vibehistorian.vibecomposer.Helpers.PartExt;
+import org.vibehistorian.vibecomposer.Helpers.PhraseExt;
+import org.vibehistorian.vibecomposer.Helpers.PhraseNotes;
+import org.vibehistorian.vibecomposer.MidiGenerator.Durations;
+
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Enumeration;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Vector;
+
+import static org.vibehistorian.vibecomposer.MidiGenerator.DBL_ERR;
 
 public class JMusicUtilsCustom implements JMC {
 
 	private static double tickRemainder = 0.0;
 	private static final short DEFAULT_PPQN = 960;
+
+	public static class EventPair {
+		public double time;
+		public Event ev;
+
+		public EventPair(double t, Event e) {
+			time = t;
+			ev = e;
+		}
+	}
+
+	public static class CompareKey implements Comparator {
+		public int compare(Object a, Object b) {
+			EventPair ae = (EventPair) a;
+			EventPair be = (EventPair) b;
+			if (ae.time - be.time < 0)
+				return -1;
+			else if (ae.time - be.time > 0)
+				return 1;
+			else
+				return 0;
+		}
+	}
 
 	public static void consolidate(Part p) {
 
@@ -166,28 +193,38 @@ public class JMusicUtilsCustom implements JMC {
 			return;
 		}
 		Vector<Note> notes = phrase.getNoteList();
+		PhraseNotes phraseNotes = new PhraseNotes(notes);
+		phraseNotes.remakeNoteStartTimes();
+
+		List<Double> offsets = MidiGeneratorUtils.generateRhythmOffsets(notes.size() - 1, rhythmVariation, generator.nextLong());
+		List<Double> durations = MidiGeneratorUtils.generateRhythmOffsets(notes.size() - 1, rhythmVariation, generator.nextLong());
+
 		for (int i = 0; i < notes.size(); i++) {
+			Note n = notes.get(i);
 			if (i == 0) {
 				continue;
 			}
-			Note n = notes.get(i);
+
 			// create new pitch value
-			if (pitchVariation > 0) {
+			if (pitchVariation > 0 && n.getPitch() != Pitches.REST) {
 				n.setPitch(n.getPitch()
 						+ (int) (generator.nextDouble() * (pitchVariation * 2) - pitchVariation));
 			}
 			// create new rhythm and duration values
+
 			if (rhythmVariation > 0.0) {
-				double varOffset = (generator.nextDouble() * (rhythmVariation * 2) - rhythmVariation);
-				double varDur = (generator.nextDouble() * (rhythmVariation * 2) - rhythmVariation);
+				double varOffset = offsets.get(i - 1);
+				double varDur = durations.get(i - 1);
 				double dur = n.getDuration();
-				if (!isDrum && dur < Durations.SIXTEENTH_NOTE + MidiGenerator.DBL_ERR) {
-					varOffset /= 5;
+				if (!isDrum && dur < Durations.SIXTEENTH_NOTE + DBL_ERR) {
 					varDur /= 5;
 				}
-				n.setOffset(n.getOffset() + varOffset);
-				n.setDuration(n.getDuration() + varDur);
 
+
+				n.setOffset(n.getOffset() + varOffset);
+				//LG.i("Note start time: " + phraseNotes.get(i).getAbsoluteStartTime() + ", rv: " + n.getRhythmValue() + "; new off: " + n.getOffset());
+
+				n.setDuration(dur + varDur);
 
 			}
 			// create new dynamic value
@@ -196,7 +233,9 @@ public class JMusicUtilsCustom implements JMC {
 						- dynamicVariation));
 			}
 		}
-		MidiGeneratorUtils.applySamePitchCollisionAvoidance(notes);
+		if (!isDrum) {
+			MidiGeneratorUtils.applySamePitchCollisionAvoidance(notes);
+		}
 	}
 
 	public static void midi(Score scr, String fileName) {
@@ -254,33 +293,14 @@ public class JMusicUtilsCustom implements JMC {
 			//System.out.println("partTempoMultiplier = " + partTempoMultiplier);
 
 			//order phrases based on their startTimes
-			phraseNumb = inst.getPhraseList().size();
-			for (int i = 0; i < phraseNumb; i++) {
-				phrase1 = (Phrase) inst.getPhraseList().elementAt(i);
-				for (int j = 0; j < phraseNumb; j++) {
-					phrase2 = (Phrase) inst.getPhraseList().elementAt(j);
-					if (phrase2.getStartTime() > phrase1.getStartTime()) {
-						inst.getPhraseList().setElementAt(phrase2, i);
-						inst.getPhraseList().setElementAt(phrase1, j);
-						break;
-					}
-				}
-			}
+			Vector<Phrase> phrList = inst.getPhraseList();
+			Collections.sort(phrList, Comparator.comparingDouble(Phrase::getStartTime));
+
 			//break Note objects into NoteStart's and NoteEnd's
 			//as well as combining all phrases into one list
 			//			HashMap midiEvents = new HashMap();
-
-			class EventPair {
-				public double time;
-				public Event ev;
-
-				public EventPair(double t, Event e) {
-					time = t;
-					ev = e;
-				}
-			}
 			;
-			LinkedList<EventPair> midiEvents = new LinkedList<EventPair>();
+			LinkedList<EventPair> midiEvents = new LinkedList<>();
 
 			/*if(inst.getTempo() != Part.DEFAULT_TEMPO){
 				//System.out.println("Adding part tempo");
@@ -303,15 +323,15 @@ public class JMusicUtilsCustom implements JMC {
 						new EventPair(0, new KeySig(inst.getKeySignature(), inst.getKeyQuality())));
 			}
 
-			Enumeration partEnum = inst.getPhraseList().elements();
-			double max = 0;
-			double startTime = 0.0;
+			Enumeration partEnum = phrList.elements();
+            double startTime = 0.0;
 			double offsetValue = 0.0;
 			int phraseCounter = 0;
 			while (partEnum.hasMoreElements()) {
 				Phrase phrase = (Phrase) partEnum.nextElement();
 				Enumeration phraseEnum = phrase.getNoteList().elements();
 				startTime = phrase.getStartTime() * partTempoMultiplier;
+				//LG.i("Phr start time: " + startTime);
 				if (phrase.getInstrument() != NO_INSTRUMENT) {
 					midiEvents.add(new EventPair(startTime, new PChange(
 							(short) phrase.getInstrument(), (short) inst.getChannel(), 0)));
@@ -327,7 +347,6 @@ public class JMusicUtilsCustom implements JMC {
 				}
 
 				////////////////////////////////////////////////
-				int noteCounter = 0;
 				//System.out.println();
 				System.out.print(" Phrase " + phraseCounter++ + ":");
 				// set a silly starting value to force and initial pan cc event
@@ -352,7 +371,7 @@ public class JMusicUtilsCustom implements JMC {
 						pitch = Note.freqToMidiPitch(note.getFrequency());
 					} else
 						pitch = note.getPitch();
-					if (pitch != REST) {
+					if (pitch >= 0) {
 						midiEvents.add(new EventPair(new Double(startTime + offsetValue),
 								new NoteOn((short) pitch, (short) note.getDynamic(),
 										(short) inst.getChannel(), 0)));
@@ -369,7 +388,40 @@ public class JMusicUtilsCustom implements JMC {
 					System.out.print("."); // completed a note
 				}
 			}
-			/*
+
+			//Sort the hashmap by starttime (key value)
+			Collections.sort(midiEvents, new CompareKey());
+			//Add times to events, now that things are sorted
+			double st = 0.0; //start time
+			double sortStart = 0.0; // start time from list of notes ons and offs.
+			int time; // the start time as ppqn value
+			resetTicker();
+
+			int timeCounter = 0;
+			for (int index = 0; index < midiEvents.size(); index++) {
+				EventPair ep = midiEvents.get(index);
+				Event event = ep.ev;
+				sortStart = ep.time;
+				int newValue = (int) Math.round(sortStart * smf.getPPQN());
+				time = newValue - timeCounter;
+				timeCounter = newValue;
+				event.setTime(time);
+				smfTrack.addEvent(event);
+			}
+			int actualEndTime = (int) ((score.getEndTime() - sortStart) * (double)smf.getPPQN() + 0.5);
+			Event endTrack = new EndTrack();
+			endTrack.setTime(actualEndTime);
+			smfTrack.addEvent(endTrack);
+			//add this track to the SMF
+			smf.getTrackList().addElement(smfTrack);
+			System.out.println();
+		}
+	}
+
+	private static void resetTicker() {
+		tickRemainder = 0.0;
+
+			/* OLD CODE ---------------
 			//Sort lists so start times are in the right order
 			Enumeration start = midiNoteEvents.elements();
 			Enumeration timeing = timeingList.elements();
@@ -402,45 +454,6 @@ public class JMusicUtilsCustom implements JMC {
 				timeing = timeingList.elements();
 			}
 			*/
-
-			//Sort the hashmap by starttime (key value)
-			class CompareKey implements Comparator {
-				public int compare(Object a, Object b) {
-					EventPair ae = (EventPair) a;
-					EventPair be = (EventPair) b;
-					if (ae.time - be.time < 0)
-						return -1;
-					else if (ae.time - be.time > 0)
-						return 1;
-					else
-						return 0;
-				}
-			}
-			Collections.sort(midiEvents, new CompareKey());
-			//Add times to events, now that things are sorted
-			double st = 0.0; //start time
-			double sortStart; // start time from list of notes ons and offs.
-			int time; // the start time as ppqn value
-			resetTicker();
-
-			for (int index = 0; index < midiEvents.size(); index++) {
-				EventPair ep = midiEvents.get(index);
-				Event event = ep.ev;
-				sortStart = ep.time;
-				time = (int) (((((sortStart - st) * (double) smf.getPPQN()))) + 0.5);
-				st = sortStart;
-				event.setTime(time);
-				smfTrack.addEvent(event);
-			}
-			smfTrack.addEvent(new EndTrack());
-			//add this track to the SMF
-			smf.getTrackList().addElement(smfTrack);
-			System.out.println();
-		}
-	}
-
-	private static void resetTicker() {
-		tickRemainder = 0.0;
 	}
 
 	/**
@@ -468,7 +481,7 @@ public class JMusicUtilsCustom implements JMC {
 			startTimes.add(Pair.of(current + n.getOffset(), n));
 			current += n.getRhythmValue();
 		}
-		Collections.sort(startTimes, Comparator.comparing(e -> e.getKey()));
+		Collections.sort(startTimes, Map.Entry.comparingByKey());
 		return startTimes;
 	}
 }

@@ -1,9 +1,10 @@
 package org.vibehistorian.vibecomposer.Parts;
 
-import java.util.List;
+import org.vibehistorian.vibecomposer.Helpers.PhraseNotes;
 
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlType;
+import java.util.List;
 
 @XmlRootElement(name = "melodyPart")
 @XmlType(propOrder = {})
@@ -23,6 +24,9 @@ public class MelodyPart extends InstPart {
 	private int speed = 0;
 	private int startNoteChance = 100;
 	private boolean patternFlexible = false;
+
+	private PhraseNotes customDurationNotes = null;
+	private List<Integer> customDurationChances = null;
 
 	public MelodyPart() {
 		partNum = 0;
@@ -143,4 +147,20 @@ public class MelodyPart extends InstPart {
 	public void setPatternFlexible(boolean patternFlexible) {
 		this.patternFlexible = patternFlexible;
 	};
+
+	public PhraseNotes getCustomDurationNotes() {
+		return customDurationNotes;
+	}
+
+	public void setCustomDurationNotes(PhraseNotes customDurationNotes) {
+		this.customDurationNotes = customDurationNotes;
+	}
+
+	public List<Integer> getCustomDurationChances() {
+		return customDurationChances;
+	}
+
+	public void setCustomDurationChances(List<Integer> customDurationChances) {
+		this.customDurationChances = customDurationChances;
+	}
 }

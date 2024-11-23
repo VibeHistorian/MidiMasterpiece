@@ -1,16 +1,22 @@
 package org.vibehistorian.vibecomposer;
 
-import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.DoubleStream;
-import java.util.stream.IntStream;
-
+import jm.constants.Pitches;
+import jm.music.data.Note;
+import jm.music.data.Phrase;
 import org.apache.commons.lang3.tuple.Pair;
 import org.vibehistorian.vibecomposer.MidiUtils.ScaleMode;
 
-import jm.music.data.Note;
-import jm.music.data.Phrase;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.DoubleStream;
+import java.util.stream.IntStream;
 
 public class MidiGeneratorUtils {
 
@@ -62,19 +68,32 @@ public class MidiGeneratorUtils {
 	}
 
 	static List<Integer> multipliedDirections(List<Integer> directions, int randomSeed,
-			int targetNoteVariation) {
+											  int targetNoteVariation, MelodyUtils.NoteTargetDirection direction) {
 		if (targetNoteVariation < 1) {
 			targetNoteVariation = 1;
+		}
+		if (direction != MelodyUtils.NoteTargetDirection.ANY) {
+			targetNoteVariation *= 2;
 		}
 		Random rand = new Random(randomSeed);
 		List<Integer> multiDirs = new ArrayList<>();
 		for (Integer o : directions) {
+			if (direction == MelodyUtils.NoteTargetDirection.ASC) {
+				o = Math.abs(o);
+			} else if (direction == MelodyUtils.NoteTargetDirection.DESC) {
+				o = Math.abs(o) * -1;
+			}
 			int multiplied = (rand.nextInt(targetNoteVariation) + 1) * o;
-			if (o < 0) {
+			if (direction == MelodyUtils.NoteTargetDirection.ANY && o < 0) {
 				// small correction for too low dips
 				multiplied++;
 			}
 			multiDirs.add(multiplied);
+		}
+		if (direction == MelodyUtils.NoteTargetDirection.ASC) {
+			Collections.sort(multiDirs);
+		} else if (direction == MelodyUtils.NoteTargetDirection.DESC) {
+			Collections.sort(multiDirs, (e1,e2) -> Integer.compare(e2,e1));
 		}
 		return multiDirs;
 	}
@@ -94,7 +113,7 @@ public class MidiGeneratorUtils {
 	}
 
 	public static int adjustChanceParamForTransition(int param, Section sec, int chordNum,
-			int chordSize, int maxEffect, double affectedMeasure, boolean reverseEffect) {
+			int chordSize, int maxEffect, double affectedMeasure, boolean reverseEffect, boolean clampChance) {
 		if (chordSize < 2 || !sec.isTransition()) {
 			return param;
 		}
@@ -119,7 +138,9 @@ public class MidiGeneratorUtils {
 		} else {
 			param -= maxEffect * effect * multiplier;
 		}
-		param = OMNI.clampChance(param);
+		if (clampChance) {
+			param = OMNI.clampChance(param);
+		}
 		//LG.d("New param: " + param);
 		return param;
 	}
@@ -143,19 +164,10 @@ public class MidiGeneratorUtils {
 				}
 				LG.i("No chord note present in Chord: " + Arrays.toString(c));
 			}
+			Collections.sort(choices);
 			choiceMap.put(counter++, choices);
 		}
 		return choiceMap;
-	}
-
-	public static List<Integer> generateOffsets(List<String> chordStrings, int randomSeed,
-			int targetMode, int targetNoteVariation, Boolean isPublic) {
-		List<int[]> chords = new ArrayList<>();
-		for (int i = 0; i < chordStrings.size(); i++) {
-			chords.add(MidiUtils.mappedChord(chordStrings.get(i)));
-		}
-		return MidiGeneratorUtils.generateOffsets(chords, randomSeed, targetMode,
-				targetNoteVariation);
 	}
 
 	static Pair<Integer, Integer> normalizeNotePitch(int startingNote, int startingPitch) {
@@ -171,26 +183,36 @@ public class MidiGeneratorUtils {
 		return Pair.of(startingNote, startingPitch);
 	}
 
-	static List<Integer> generateOffsets(List<int[]> chords, int randomSeed, int targetMode,
-			int targetNoteVariation) {
+	public static List<Integer> generateNoteTargetOffsets(List<String> chordStrings, int randomSeed,
+														  int targetMode, int targetNoteVariation, Boolean isPublic, MelodyUtils.NoteTargetDirection direction) {
+		List<int[]> chords = new ArrayList<>();
+		for (int i = 0; i < chordStrings.size(); i++) {
+			chords.add(MidiUtils.mappedChord(chordStrings.get(i)));
+		}
+		return MidiGeneratorUtils.generateNoteTargetOffsets(chords, randomSeed, targetMode,
+				targetNoteVariation, direction);
+	}
+
+	static List<Integer> generateNoteTargetOffsets(List<int[]> chords, int randomSeed, int targetMode,
+												   int targetNoteVariation, MelodyUtils.NoteTargetDirection noteTargetDir) {
 		List<Integer> chordOffsets = convertRootsToOffsets(getRootIndexes(chords), targetMode);
 		List<Integer> multipliedDirections = multipliedDirections(
 				MidiGenerator.gc != null && MidiGenerator.gc.isMelodyUseDirectionsFromProgression()
 						? generateMelodyOffsetDirectionsFromChordProgression(chords, true,
 								randomSeed)
 						: randomizedChordDirections(chords.size(), randomSeed),
-				randomSeed + 1, targetNoteVariation);
+				randomSeed + 1, targetNoteVariation, noteTargetDir);
 		List<Integer> offsets = new ArrayList<>();
-		for (int i = 0; i < chordOffsets.size(); i++) {
-			/*LG.d("Chord offset: " + chordOffsets.get(i) + ", multiDir: "
+		if (targetMode == 1) {
+			for (int i = 0; i < chordOffsets.size(); i++) {
+				/*LG.d("Chord offset: " + chordOffsets.get(i) + ", multiDir: "
 					+ multipliedDirections.get(i));*/
-			if (targetMode == 1) {
 				offsets.add(chordOffsets.get(i) + multipliedDirections.get(i));
-			} else {
-				offsets.add(multipliedDirections.get(i));
 			}
-
+		} else {
+			offsets = multipliedDirections;
 		}
+
 		if (targetMode >= 1) {
 			Map<Integer, List<Integer>> choiceMap = getChordNoteChoicesFromChords(chords);
 			Random offsetRandomizer = new Random(randomSeed);
@@ -198,19 +220,22 @@ public class MidiGeneratorUtils {
 				List<Integer> choices = choiceMap.get(i);
 				int offset = (targetMode == 1) ? offsets.get(i) - chordOffsets.get(i)
 						: offsets.get(i);
+				int randomChange = noteTargetDir.direction >= 0 ? 1 : -1;
 				int chordTargetNote = choices.contains(offset) ? offset
 						: MidiUtils.getClosestFromList(choices,
-								offset + (offsetRandomizer.nextInt(100) < 75 ? 1 : 0));
-				LG.d("Offset old: " + offset + ", C T NOte: " + chordTargetNote);
+								offset + (offsetRandomizer.nextInt(100) < 75 ? randomChange : 0), noteTargetDir.direction);
+				LG.d("Offset old: " + offset + ", Chord Target Note: " + chordTargetNote);
 				offsets.set(i, (targetMode == 1) ? chordTargetNote + chordOffsets.get(i)
 						: chordTargetNote);
 			}
 			if (targetMode == 2) {
 				int last = offsets.get(offsets.size() - 1);
 				if (offsets.size() > 3 && (last == offsets.get(offsets.size() - 3))) {
-					last += (new Random(randomSeed).nextBoolean() ? 2 : -2);
+					int offsetChange = noteTargetDir.direction != 0 ? noteTargetDir.direction*2
+								: (new Random(randomSeed).nextBoolean() ? 2 : -2);
+					last += offsetChange;
 					offsets.set(offsets.size() - 1,
-							MidiUtils.getClosestFromList(choiceMap.get(offsets.size() - 1), last));
+							MidiUtils.getClosestFromList(choiceMap.get(offsets.size() - 1), last, noteTargetDir.direction));
 					LG.i("Last offset moved!");
 				}
 			}
@@ -224,10 +249,15 @@ public class MidiGeneratorUtils {
 		// try to set one of the offsets as the root note, if a close one is available and no offset is root yet
 		if (new Random(randomSeed).nextInt(100) < 90 && (targetMode == 2) && !offsets.contains(0)) {
 			LG.i("Trying to insert root note into note targets..");
-			List<Integer> randomIterationOrder = IntStream.range(0, offsets.size()).boxed().collect(Collectors.toList());
-			Collections.shuffle(randomIterationOrder, new Random(randomSeed + 1324));
-			for (int i = 0; i < offsets.size(); i++) {
-					if (MidiUtils.containsRootNote(chords.get(i % chords.size())) && Math.abs(offsets.get(i)) <= 2) {
+			int offsetsToConsider = noteTargetDir == MelodyUtils.NoteTargetDirection.ANY ? offsets.size() : offsets.size()/2;
+			List<Integer> offsetIterationOrder = IntStream.range(0, offsetsToConsider).boxed().collect(Collectors.toList());
+			if (noteTargetDir == MelodyUtils.NoteTargetDirection.ANY) {
+				Collections.shuffle(offsetIterationOrder, new Random(randomSeed + 1324));
+			}
+
+			for (int i = 0; i < offsetIterationOrder.size(); i++) {
+					int order = offsetIterationOrder.get(i);
+					if (MidiUtils.containsRootNote(chords.get(order % chords.size())) && Math.abs(offsets.get(order)) <= 2) {
 						offsets.set(i, 0);
 						LG.i("Root note inserted into note targets! At index: " + i);
 						break;
@@ -389,7 +419,7 @@ public class MidiGeneratorUtils {
 		int startingOct = startingPitch / 12;
 		int startingNote = MidiUtils.MAJ_SCALE.indexOf(startingPitch % 12);
 		if (startingNote < 0) {
-			throw new IllegalArgumentException("BAD STARTING NOTE!");
+			startingNote = MidiUtils.MAJ_SCALE.indexOf(MidiUtils.getClosestPitchFromList(MidiUtils.MAJ_SCALE, startingPitch % 12));
 		}
 		return startingNote + startingOct * 7
 				+ ((BLOCK_TARGET_MODE > 0) ? blockChordNoteChoices.get(chordNoteChoiceIndex) : 0);
@@ -452,7 +482,7 @@ public class MidiGeneratorUtils {
 				double multiplier = minimum
 						+ maxMultiplierAdd * ((dur - start) / (maxDuration - start));
 				if (multiplier < 0.1) {
-					n.setPitch(Note.REST);
+					n.setPitch(Pitches.REST);
 				} else {
 					n.setDynamic(OMNI.clampVel(n.getDynamic() * multiplier));
 				}
@@ -486,12 +516,13 @@ public class MidiGeneratorUtils {
 		}
 		int previousPitch = fullMelody.get(0).getPitch();
 		if (previousPitch < 0) {
-			previousPitch = -1;
+			previousPitch = Pitches.REST;
 		}
 		for (int i = 1; i < fullMelody.size(); i++) {
 			Note n = fullMelody.get(i);
 			int pitch = n.getPitch();
-			if (pitch < 0) {
+			if (pitch < 0 || previousPitch == Pitches.REST) {
+				previousPitch = pitch;
 				continue;
 			}
 			// remove all instances of B-F and F-B (the only interval of 6 within the key)
@@ -519,11 +550,11 @@ public class MidiGeneratorUtils {
 
 	}
 
-	static void replaceAvoidNotes(Map<Integer, List<Note>> fullMelodyMap, List<int[]> chords,
-			int randomSeed, int notesToAvoid) {
+	static void replaceNearChordNotes(Map<Integer, List<Note>> fullMelodyMap, List<int[]> chords,
+									  int randomSeed, int notesToAvoid) {
 		Random rand = new Random(randomSeed);
 		for (int i = 0; i < fullMelodyMap.keySet().size(); i++) {
-			Set<Integer> avoidNotes = MidiUtils.avoidNotesFromChord(chords.get(i % chords.size()),
+			Set<Integer> avoidNotes = MidiUtils.getNearNotesFromChord(chords.get(i % chords.size()),
 					notesToAvoid);
 			//LG.d(StringUtils.join(avoidNotes, ","));
 			List<Note> notes = fullMelodyMap.get(i);
@@ -673,6 +704,70 @@ public class MidiGeneratorUtils {
 			}
 			currIndex += 1 + delays.size();
 		}
+	}
+
+	public static List<Double> generateRhythmOffsets(int size, double offsetVariation, long randomSeed) {
+		if (size < 1) {
+			return new ArrayList<>();
+		} else if (size == 1) {
+			return Collections.singletonList(0.0);
+		}
+
+		// Initialize random number generator with the seed
+		Random random = new Random(randomSeed);
+
+		// List to store the offsets
+		List<Double> offsets = new ArrayList<>();
+
+		// Generate size - 1 random offsets between -offsetVariation and +offsetVariation
+		double sum = 0;
+		for (int i = 0; i < size - 1; i++) {
+			double offset = -offsetVariation + (2 * offsetVariation) * random.nextDouble();
+			offsets.add(offset);
+			sum += offset;
+		}
+
+		// Try to correct the sum by using the last element
+		double lastOffset = -sum;
+
+		// If last offset exceeds bounds, adjust several elements iteratively
+		if (Math.abs(sum) > offsetVariation) {
+			// Randomly adjust values that are not already at the boundary
+			double excess = sum;
+			//LG.i("Excess before: " + excess);
+			for (int i = 0; i < size - 1 && Math.abs(excess) > 0.00001; i++) {
+				double current = offsets.get(i);
+				double adjustment = (random.nextDouble() - 0.5) * 2 * Math.min(Math.abs(excess), offsetVariation - Math.abs(current));
+
+				// Apply adjustment only if it reduces excess
+				if ((excess < 0 && adjustment < 0) || (excess > 0 && adjustment > 0)) {
+					adjustment *= -1;
+				}
+				offsets.set(i, current + adjustment);
+				excess += adjustment;
+			}
+			// Now, set the last value to the remaining excess
+			//LG.i("Excess AFTER: " + excess);
+			lastOffset = -excess;
+		}
+
+		// Make sure the last value is within bounds
+		if (lastOffset < -offsetVariation) lastOffset = -offsetVariation;
+		if (lastOffset > offsetVariation) lastOffset = offsetVariation;
+
+		// Add the final corrected value
+		offsets.add(lastOffset);
+
+		// Shuffle the offsets list to randomize order
+		Collections.shuffle(offsets, random);
+
+		//LG.i("Offset variation: " + offsetVariation);
+		/*LG.i("Random values: " + offsets.stream()
+				.map(d -> String.format("%.2f", d*100)) // Format each double to 5 decimal places
+				.collect(Collectors.joining(" ")));*/
+		//LG.i("Sum = " + offsets.stream().mapToDouble(e -> e).sum());
+
+		return offsets;
 	}
 
 }

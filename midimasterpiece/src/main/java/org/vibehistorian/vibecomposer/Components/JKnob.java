@@ -2,40 +2,26 @@ package org.vibehistorian.vibecomposer.Components;
 
 
 // Imports for the GUI classes.
-import java.awt.Color;
-import java.awt.Container;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.MouseInfo;
-import java.awt.Point;
-import java.awt.RenderingHints;
-import java.awt.Shape;
+
+import org.vibehistorian.vibecomposer.MidiUtils;
+import org.vibehistorian.vibecomposer.OMNI;
+import org.vibehistorian.vibecomposer.Panels.InstPanel;
+import org.vibehistorian.vibecomposer.Panels.KnobPanel;
+import org.vibehistorian.vibecomposer.Popups.KnobValuePopup;
+import org.vibehistorian.vibecomposer.SwingUtils;
+import org.vibehistorian.vibecomposer.VibeComposerGUI;
+
+import javax.swing.*;
+import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
-import java.awt.event.MouseWheelEvent;
-import java.awt.event.MouseWheelListener;
 import java.awt.font.FontRenderContext;
 import java.awt.font.GlyphVector;
 import java.awt.geom.AffineTransform;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
-
-import javax.swing.JComponent;
-import javax.swing.JTextField;
-import javax.swing.SwingUtilities;
-
-import org.vibehistorian.vibecomposer.MidiUtils;
-import org.vibehistorian.vibecomposer.OMNI;
-import org.vibehistorian.vibecomposer.SwingUtils;
-import org.vibehistorian.vibecomposer.UndoManager;
-import org.vibehistorian.vibecomposer.VibeComposerGUI;
-import org.vibehistorian.vibecomposer.Panels.InstPanel;
-import org.vibehistorian.vibecomposer.Panels.KnobPanel;
-import org.vibehistorian.vibecomposer.Popups.KnobValuePopup;
 
 /**
  * JKnob.java -
@@ -111,7 +97,7 @@ public class JKnob extends JComponent
 	 * Constructor that initializes the position
 	 * of the knob to the specified angle in radians.
 	 *
-	 * @param initAngle the initial angle of the knob.
+	 * @param initTheta the initial angle of the knob.
 	 */
 	public JKnob(double initTheta) {
 		this(initTheta, Color.gray, Color.black);
@@ -145,8 +131,8 @@ public class JKnob extends JComponent
 	 * knob to the specified position and also allows the
 	 * colors of the knob and spot to be specified.
 	 *
-	 * @param initAngle     the initial angle of the knob.
-	 * @param initColor     the color of the knob.
+	 * @param initTheta     the initial angle of the knob.
+	 * @param initKnobColor     the color of the knob.
 	 * @param initSpotColor the color of the spot.
 	 */
 	public JKnob(double initTheta, Color initKnobColor, Color initSpotColor) {
@@ -159,39 +145,35 @@ public class JKnob extends JComponent
 		setSize(2 * radius, 2 * radius);
 		this.addMouseListener(this);
 		this.addMouseMotionListener(this);
-		addMouseWheelListener(new MouseWheelListener() {
+		addMouseWheelListener(e -> {
+            if (!scrollEnabled && !e.isControlDown()) {
+                Container cont = JKnob.this.getParent();
+                cont.dispatchEvent(SwingUtilities.convertMouseEvent(e.getComponent(), e, cont));
+                return;
+            }
 
-			@Override
-			public void mouseWheelMoved(MouseWheelEvent e) {
-				if (!scrollEnabled && !e.isControlDown()) {
-					Container cont = JKnob.this.getParent();
-					cont.dispatchEvent(SwingUtilities.convertMouseEvent(e.getComponent(), e, cont));
-					return;
-				}
+            int val = 0;
+            if (tickSpacing > 0) {
+                int index = tickThresholds.indexOf(curr);
+                if (index < 0) {
+                    int closest = MidiUtils.getClosestFromList(tickThresholds, curr);
+                    index = tickThresholds.indexOf(closest);
+                }
+                val = tickThresholds.get(
+                        OMNI.clamp(index - e.getWheelRotation(), 0, tickThresholds.size() - 1));
+            } else {
+                int scrollAmount = e.isShiftDown() ? 1 : Math.max(1, (max - min) / 20);
+                val = OMNI.clamp(curr - e.getWheelRotation() * scrollAmount, min, max);
+            }
 
-				int val = 0;
-				if (tickSpacing > 0) {
-					int index = tickThresholds.indexOf(curr);
-					if (index < 0) {
-						int closest = MidiUtils.getClosestFromList(tickThresholds, curr);
-						index = tickThresholds.indexOf(closest);
-					}
-					val = tickThresholds.get(
-							OMNI.clamp(index - e.getWheelRotation(), 0, tickThresholds.size() - 1));
-				} else {
-					int scrollAmount = e.isShiftDown() ? 1 : Math.max(1, (max - min) / 20);
-					val = OMNI.clamp(curr - e.getWheelRotation() * scrollAmount, min, max);
-				}
+            if (e.isControlDown()) {
+                setValueGlobal(val);
+            } else {
+                setValue(val);
+            }
 
-				if (e.isControlDown()) {
-					setValueGlobal(val);
-				} else {
-					setValue(val);
-				}
-
-				repaint();
-			}
-		});
+            repaint();
+        });
 	}
 
 
@@ -363,7 +345,7 @@ public class JKnob extends JComponent
 		int intVal = min + (int) Math.round(val * diff);
 		int smallestDiff = Integer.MAX_VALUE;
 		int smallestInt = 0;
-		if (tickSpacing > 0) {
+		if (tickSpacing > 0 && !VibeComposerGUI.allowValuesOutOfRange.isSelected()) {
 			for (Integer i : tickThresholds) {
 				int currentDiff = Math.abs(intVal - i);
 				if (smallestDiff > currentDiff) {
@@ -498,17 +480,18 @@ public class JKnob extends JComponent
 			ctrlClick = true;
 		}
 
-		UndoManager.saveToHistory(this.parent(), updateAndGetValue());
+		VibeComposerGUI.actionUndoManager.saveToHistory(this.parent(), updateAndGetValue());
 
 		if (SwingUtilities.isLeftMouseButton(e)) {
 			Point mouseLoc = e.getPoint();
 			pressedOnSpot = isOnCenter(mouseLoc);
-
-			fine = VibeComposerGUI.knobControlByDragging.isSelected() || e.isShiftDown();
-			fineStart = curr;
-			startPoint = new Point(MouseInfo.getPointerInfo().getLocation());
-			SwingUtilities.convertPointFromScreen(startPoint, JKnob.this);
-			recalc(e);
+			if (pressedOnSpot) {
+				fine = VibeComposerGUI.knobControlByDragging.isSelected() || e.isShiftDown();
+				fineStart = curr;
+				startPoint = new Point(SwingUtils.getMouseLocation());
+				SwingUtilities.convertPointFromScreen(startPoint, JKnob.this);
+				recalc(e);
+			}
 		} else if (SwingUtilities.isRightMouseButton(e)) {
 			fineStart = curr;
 			if (ctrlClick) {
@@ -590,7 +573,7 @@ public class JKnob extends JComponent
 		if (!isEnabled()) {
 			return;
 		}
-		Point xy = new Point(MouseInfo.getPointerInfo().getLocation());
+		Point xy = new Point(SwingUtils.getMouseLocation());
 		SwingUtilities.convertPointFromScreen(xy, JKnob.this);
 
 		int yChange = startPoint.y - xy.y;
@@ -756,7 +739,7 @@ public class JKnob extends JComponent
 	}
 
 	public void setAllowValuesOutsideRange(boolean b) {
-		allowValuesOutsideRange = true;
+		allowValuesOutsideRange = b;
 	}
 
 	public boolean isRegenerating() {

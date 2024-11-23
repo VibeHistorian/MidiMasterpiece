@@ -1,14 +1,12 @@
 package org.vibehistorian.vibecomposer.Popups;
 
-import java.awt.Point;
-import java.awt.event.WindowEvent;
-import java.awt.event.WindowListener;
-
-import javax.swing.JFrame;
-import javax.swing.JScrollPane;
-
 import org.vibehistorian.vibecomposer.LG;
 import org.vibehistorian.vibecomposer.VibeComposerGUI;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
 
 public class ExtraSettingsPopup extends CloseablePopup {
 	JScrollPane scroll;

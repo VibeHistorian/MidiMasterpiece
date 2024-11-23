@@ -1,15 +1,14 @@
 package org.vibehistorian.vibecomposer.Popups;
 
+import org.vibehistorian.vibecomposer.Components.RandomIntegerListButton;
+import org.vibehistorian.vibecomposer.LG;
+
+import javax.swing.*;
+import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.util.Random;
-
-import javax.swing.JTextField;
-
-import org.vibehistorian.vibecomposer.LG;
-import org.vibehistorian.vibecomposer.Components.RandomIntegerListButton;
 
 public class ButtonIntegerListValuePopup extends CloseablePopup {
 	private RandomIntegerListButton butt = null;
@@ -23,16 +22,7 @@ public class ButtonIntegerListValuePopup extends CloseablePopup {
 		Random rand = new Random();
 		randomNum = rand.nextInt();
 		intListField.setText(butt.getText());
-		intListField.addKeyListener(new KeyListener() {
-
-			@Override
-			public void keyTyped(KeyEvent e) {
-			}
-
-			@Override
-			public void keyPressed(KeyEvent e) {
-			}
-
+		intListField.addKeyListener(new KeyAdapter() {
 			@Override
 			public void keyReleased(KeyEvent e) {
 				if (e.getKeyCode() == KeyEvent.VK_ENTER) {

@@ -71,7 +71,7 @@ package org.vibehistorian.vibecomposer.Popups;
 						sleep(25);
 					} catch (InterruptedException e) {
 						// Auto-generated catch block
-						e.printStackTrace();
+						LG.e(e);
 					}
 				}
 
